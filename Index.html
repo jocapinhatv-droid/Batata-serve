@@ -23,7 +23,7 @@
         width: 90%;
         max-width: 400px;
     }
-    h1 { margin-bottom: 20px; }
+    h1, h2 { margin-bottom: 20px; }
     button {
         background-color: #ff6600;
         color: white;
@@ -134,18 +134,22 @@ function sendVIP() {
     const nick = document.getElementById('playerNick').value;
     const proof = document.getElementById('proof').files[0];
 
-    if(!nick || !proof) {
+    if (!nick || !proof) {
         alert("Preencha todos os campos!");
         return;
     }
 
     const reader = new FileReader();
     reader.onload = function() {
-        const base64 = reader.result;
+        const base64 = reader.result.split(',')[1]; // pega só a parte do Base64
         const templateParams = {
             nick: nick,
-            proof: base64
+            attachments: [{
+                name: proof.name,
+                data: base64
+            }]
         };
+
         emailjs.send('service_pzcm0gj', 'template_vmckyhi', templateParams)
         .then(() => {
             document.getElementById('vipFormScreen').classList.add('hidden');
@@ -159,4 +163,4 @@ function sendVIP() {
 }
 </script>
 </body>
-  </html>
+</html>
