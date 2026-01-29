@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Jogo 2D Completo</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<title>Jogo 2D</title>
 
 <style>
-body, html {
+body,html{
 margin:0;
-padding:0;
 background:#222;
-color:#eee;
+color:white;
 font-family:Arial;
 height:100vh;
 display:flex;
@@ -23,51 +23,33 @@ overflow:hidden;
 display:none;
 background:#333;
 padding:15px;
+border-radius:10px;
 flex-direction:column;
-position:relative;
+width:90vw;
+max-width:750px;
 }
 
-.screen.active{
-display:flex;
-}
+.screen.active{display:flex;}
 
 input,button{
+margin:5px 0;
+padding:10px;
 font-size:16px;
-padding:8px;
-margin:5px;
 border-radius:5px;
 border:none;
 }
 
-button{
-background:#555;
-color:white;
-}
+button{background:#555;color:white;}
 
-button:hover{background:#666;}
-
-#player-info{
-position:absolute;
-top:10px;
-right:10px;
-text-align:right;
-font-weight:bold;
-}
-
-/* ===== GAME ===== */
-
-#game-screen{
-width:820px;
-height:340px;
+#game-area{
+position:relative;
 background:#111;
 display:flex;
-position:relative;
-border-radius:10px;
+height:360px;
 }
 
 #weapon-left{
 width:80px;
-height:320px;
 background:#222;
 display:flex;
 justify-content:center;
@@ -79,31 +61,30 @@ max-width:60px;
 max-height:60px;
 }
 
-#game-canvas{
-width:700px;
-height:320px;
+canvas{
 background:#222;
-cursor:crosshair;
 }
 
-#right-blocker{
+#right-wall{
 width:40px;
-background:#0055ff;
+background:#0044ff;
 }
 
-/* HUD */
-
-#btn-voltar{
+#btnBack{
 position:absolute;
-bottom:15px;
-left:15px;
+bottom:10px;
+left:10px;
 }
 
-#score-display{
+#scoreGame{
 position:absolute;
-bottom:15px;
-right:15px;
+bottom:10px;
+right:10px;
 font-size:20px;
+}
+
+.inventory button.selected{
+background:green;
 }
 </style>
 </head>
@@ -111,195 +92,218 @@ font-size:20px;
 <body>
 
 <!-- LOGIN -->
-<div id="login-screen" class="screen active">
+<div id="login" class="screen active">
 <h2>Login / Criar Conta</h2>
-<input id="username" placeholder="Nome">
-<input id="password" type="password" placeholder="Senha">
-<button id="btn-login">Logar</button>
-<button id="btn-create">Criar Conta</button>
-<p id="login-message"></p>
+<input id="user" placeholder="Usuário">
+<input id="pass" type="password" placeholder="Senha">
+<button id="loginBtn">Login</button>
+<button id="createBtn">Criar Conta</button>
+<p id="loginMsg"></p>
 </div>
 
 <!-- LOBBY -->
-<div id="lobby-screen" class="screen">
+<div id="lobby" class="screen">
 <h2>Lobby</h2>
-<button id="btn-play">Jogar</button>
 
-<div id="player-info">
-Jogador: <span id="player-name"></span><br>
-Pontos: <span id="player-points">0</span>
-</div>
+<p>Jogador: <span id="playerName"></span></p>
+<p>Pontos: <span id="playerPoints">0</span></p>
 
-<input id="code-input" placeholder="Código">
-<button id="btn-send-code">Enviar Código</button>
-<p id="code-message"></p>
+<button id="playBtn">Jogar</button>
+<button id="shopBtn">Loja</button>
+
+<input id="codeInput" placeholder="Código">
+<button id="sendCode">Enviar Código</button>
+<p id="codeMsg"></p>
 
 <h3>Inventário</h3>
-<div id="weapon-list"></div>
+<div id="inventory" class="inventory"></div>
+</div>
+
+<!-- LOJA -->
+<div id="shop" class="screen">
+<h2>Loja</h2>
+<p>Pontos: <span id="shopPoints"></span></p>
+<button id="buyPistol">Comprar Pistola (1500)</button>
+<p id="shopMsg"></p>
+<button id="backLobby1">Voltar</button>
 </div>
 
 <!-- GAME -->
-<div id="game-screen" class="screen">
-<button id="btn-voltar">Voltar</button>
+<div id="game" class="screen">
+
+<div id="game-area">
+<button id="btnBack">Menu</button>
 <div id="weapon-left"></div>
-<canvas id="game-canvas" width="700" height="320"></canvas>
-<div id="right-blocker"></div>
-<div id="score-display">Pontos: 0</div>
+<canvas id="canvas" width="600" height="360"></canvas>
+<div id="right-wall"></div>
+<div id="scoreGame">0</div>
+</div>
+
 </div>
 
 <script>
-const STORAGE="contas";
-let contas=JSON.parse(localStorage.getItem(STORAGE))||{};
-let user=null;
+let contas = JSON.parse(localStorage.getItem("contas")) || {};
+let usuario = null;
 
-const armas={
-Normal:{dmg:1,rate:400,vida:4,img:"https://i.imgur.com/ojS8Ksv.png",scale:0.05},
-Pistola:{dmg:2,rate:250,vida:2,img:"https://i.imgur.com/ciL6yLc.png",scale:0.03}
+const armas = {
+Normal:{shots:4,rate:400,img:"https://i.imgur.com/ojS8Ksv.png"},
+Pistola:{shots:2,rate:250,img:"https://i.imgur.com/ciL6yLc.png"}
 };
 
-for(let a in armas){
-let i=new Image();
-i.src=armas[a].img;
-armas[a].imgObj=i;
+let caixas=[];
+let tiros=[];
+let pontos=0;
+let armaAtual="Normal";
+let lastShot=0;
+
+const login=document.getElementById("login");
+const lobby=document.getElementById("lobby");
+const shop=document.getElementById("shop");
+const game=document.getElementById("game");
+
+function show(t){
+login.classList.remove("active");
+lobby.classList.remove("active");
+shop.classList.remove("active");
+game.classList.remove("active");
+t.classList.add("active");
 }
 
-function salvar(){
-localStorage.setItem(STORAGE,JSON.stringify(contas));
-}
-
-btn_create.onclick=()=>{};
-const loginMsg=document.getElementById("login-message");
-
-document.getElementById("btn-create").onclick=()=>{
-let u=username.value.trim();
-let p=password.value;
-if(!u||!p)return loginMsg.textContent="Preencha tudo";
-if(contas[u]) return loginMsg.textContent="Nome indisponível";
+document.getElementById("createBtn").onclick=()=>{
+let u=user.value.trim();
+let p=pass.value;
+if(contas[u]){loginMsg.innerText="Nome indisponível";return;}
 contas[u]={pass:p,inv:["Normal"],equip:"Normal",points:0};
-salvar();
-loginMsg.textContent="Conta criada!";
-};
+localStorage.setItem("contas",JSON.stringify(contas));
+loginMsg.innerText="Conta criada";
+}
 
-document.getElementById("btn-login").onclick=()=>{
-let u=username.value.trim();
-let p=password.value;
-if(contas[u]&&contas[u].pass==p){
-user=u;
-show(lobby-screen);
+document.getElementById("loginBtn").onclick=()=>{
+let u=user.value.trim();
+let p=pass.value;
+if(contas[u]&&contas[u].pass===p){
+usuario=u;
 updateLobby();
-}else loginMsg.textContent="Erro login";
-};
-
-function show(id){
-document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-document.getElementById(id).classList.add("active");
+show(lobby);
+}else loginMsg.innerText="Erro login";
 }
 
 function updateLobby(){
-player-name.textContent=user;
-player-points.textContent=contas[user].points;
-weapon-list.innerHTML="";
-contas[user].inv.forEach(w=>{
+playerName.innerText=usuario;
+playerPoints.innerText=contas[usuario].points;
+inventory.innerHTML="";
+contas[usuario].inv.forEach(w=>{
 let b=document.createElement("button");
-b.textContent=w;
+b.innerText=w;
+if(w===contas[usuario].equip)b.classList.add("selected");
 b.onclick=()=>{
-contas[user].equip=w;
-salvar();
-};
-weapon-list.appendChild(b);
+contas[usuario].equip=w;
+save();
+updateLobby();
+}
+inventory.appendChild(b);
 });
 }
 
-document.getElementById("btn-send-code").onclick=()=>{
-if(code-input.value=="2026"){
-if(!contas[user].inv.includes("Pistola")){
-contas[user].inv.push("Pistola");
-contas[user].equip="Pistola";
-salvar();
-updateLobby();
-code-message.textContent="Pistola liberada!";
+function save(){
+localStorage.setItem("contas",JSON.stringify(contas));
 }
-}else code-message.textContent="Código errado";
-};
 
-let canvas=document.getElementById("game-canvas");
-let ctx=canvas.getContext("2d");
-
-let arma={x:50,y:160,last:0,ang:0};
-let tiros=[];
-let caixas=[];
-let pontos=0;
-
-document.getElementById("btn-play").onclick=()=>{
-show("game-screen");
-startGame();
-};
-
-document.getElementById("btn-voltar").onclick=()=>{
-show("lobby-screen");
+sendCode.onclick=()=>{
+if(codeInput.value==="2026"){
+if(!contas[usuario].inv.includes("Pistola")){
+contas[usuario].inv.push("Pistola");
+save();
 updateLobby();
-};
+codeMsg.innerText="Pistola ganha!";
+}else codeMsg.innerText="Já tem.";
+}else codeMsg.innerText="Código errado";
+}
+
+shopBtn.onclick=()=>{
+shopPoints.innerText=contas[usuario].points;
+shopMsg.innerText="";
+show(shop);
+}
+
+backLobby1.onclick=()=>show(lobby);
+
+buyPistol.onclick=()=>{
+if(contas[usuario].inv.includes("Pistola")){
+shopMsg.innerText="Já possui";
+return;
+}
+if(contas[usuario].points>=1500){
+contas[usuario].points-=1500;
+contas[usuario].inv.push("Pistola");
+contas[usuario].equip="Pistola";
+save();
+shopMsg.innerText="Comprado!";
+}else shopMsg.innerText="Sem pontos";
+}
+
+playBtn.onclick=()=>{
+armaAtual=contas[usuario].equip||"Normal";
+pontos=contas[usuario].points;
+scoreGame.innerText=pontos;
+startGame();
+show(game);
+}
+
+btnBack.onclick=()=>{
+contas[usuario].points=pontos;
+save();
+updateLobby();
+show(lobby);
+}
+
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
 
 function startGame(){
-pontos=contas[user].points;
-score-display.textContent="Pontos: "+pontos;
+caixas=[];
+tiros=[];
 setInterval(()=>{spawnBox()},2000);
-loop();
+requestAnimationFrame(loop);
 }
 
 function spawnBox(){
-caixas.push({x:650,y:0,vida:4,speed:2});
+caixas.push({x:550,y:0,hp:armas.Normal.shots});
 }
 
 canvas.onclick=e=>{
-let r=canvas.getBoundingClientRect();
-let x=e.clientX-r.left;
-let y=e.clientY-r.top;
-arma.ang=Math.atan2(y-arma.y,x-arma.x);
-let a=armas[contas[user].equip];
-if(Date.now()-arma.last>a.rate){
-arma.last=Date.now();
-tiros.push({x:arma.x,y:arma.y,ang:arma.ang});
+let now=Date.now();
+if(now-lastShot<armas[armaAtual].rate)return;
+lastShot=now;
+tiros.push({x:40,y:180});
 }
-};
 
 function loop(){
-ctx.clearRect(0,0,700,320);
+ctx.clearRect(0,0,600,360);
 
-let armaImg=armas[contas[user].equip].imgObj;
-ctx.save();
-ctx.translate(arma.x,arma.y);
-ctx.rotate(arma.ang);
-ctx.drawImage(armaImg,-20,-20,40,40);
-ctx.restore();
+caixas.forEach((b,i)=>{
+b.y+=2;
+ctx.fillStyle="red";
+ctx.fillRect(b.x,b.y,40,40);
 
-tiros.forEach((t,i)=>{
-t.x+=Math.cos(t.ang)*10;
-t.y+=Math.sin(t.ang)*10;
+tiros.forEach((t,j)=>{
+if(t.x>b.x&&t.x<b.x+40&&t.y>b.y&&t.y<b.y+40){
+b.hp--;
+tiros.splice(j,1);
+if(b.hp<=0){
+caixas.splice(i,1);
+pontos++;
+scoreGame.innerText=pontos;
+}
+}
+});
+});
+
+tiros.forEach(t=>{
+t.x+=10;
 ctx.fillStyle="yellow";
 ctx.fillRect(t.x,t.y,6,3);
-
-caixas.forEach((c,j)=>{
-if(t.x>c.x && t.x<c.x+40 && t.y>c.y && t.y<c.y+40){
-c.vida-=armas[contas[user].equip].dmg;
-tiros.splice(i,1);
-if(c.vida<=0){
-caixas.splice(j,1);
-pontos++;
-contas[user].points=pontos;
-salvar();
-}
-}
 });
-});
-
-caixas.forEach((c,i)=>{
-c.y+=c.speed;
-ctx.fillStyle="red";
-ctx.fillRect(c.x,c.y,40,40);
-});
-
-score-display.textContent="Pontos: "+pontos;
 
 requestAnimationFrame(loop);
 }
