@@ -6,15 +6,15 @@
 <title>Jogo 2D Completo</title>
 <style>
   body, html {
-    margin: 0; padding: 0; width: 400px; height: 640px;
+    margin: 0; padding: 0;
     background: #222; color: #eee;
     font-family: Arial, sans-serif;
     overflow: hidden;
     display: flex; justify-content: center; align-items: center;
+    height: 100vh;
   }
   .screen {
     display: none;
-    width: 400px; height: 640px;
     background: #333;
     padding: 15px;
     box-sizing: border-box;
@@ -45,10 +45,10 @@
     display: flex; justify-content: space-between; margin-top: 10px;
   }
   #code-area {
-    width: 140px; display: flex; flex-direction: column;
+    width: 160px; display: flex; flex-direction: column;
   }
   #inventory {
-    background: #444; padding: 10px; border-radius: 6px; width: 230px; height: 120px; overflow-y: auto;
+    background: #444; padding: 10px; border-radius: 6px; width: 380px; height: 100px; overflow-y: auto;
   }
   #inventory button {
     margin: 5px; min-width: 80px; cursor: pointer;
@@ -59,34 +59,52 @@
   #player-info {
     position: absolute; top: 10px; right: 10px; color: #eee; font-weight: bold; user-select: none;
     text-align: right;
-    font-size: 14px;
   }
   #game-screen {
-    position: relative; flex-direction: row; align-items: center; background: #111;
+    position: relative;
+    flex-direction: row;
+    align-items: center;
+    background: #111;
+    width: 460px; /* largura maior */
+    height: 640px;
   }
   #weapon-left {
-    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-    width: 60px; height: 60px; background: #222; border-radius: 10px;
-    display: flex; justify-content: center; align-items: center;
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 60px;
+    height: 60px;
+    background: #222;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     user-select: none;
+    z-index: 10;
   }
   #weapon-left img {
-    max-width: 45px; max-height: 45px; pointer-events: none;
+    max-width: 60px;
+    max-height: 60px;
+    pointer-events: none;
   }
   #game-canvas {
-    margin-left: 90px; background: #222; border-radius: 10px;
+    margin-left: 80px;
+    background: #222;
+    border-radius: 10px;
     cursor: crosshair;
-    width: 300px; height: 600px;
+    width: 400px;  /* largura maior */
+    height: 600px;
   }
   #score-display {
     position: absolute; top: 10px; right: 10px; color: #fff;
-    font-size: 18px; font-weight: bold; user-select: none;
+    font-size: 20px; font-weight: bold; user-select: none;
   }
   #btn-voltar {
     position: absolute; top: 10px; left: 10px;
-    background: #555; padding: 6px 10px; border-radius: 6px;
+    background: #555; padding: 8px 12px; border-radius: 6px;
     border: none; color: white; cursor: pointer;
-    font-size: 14px;
+    z-index: 20;
   }
   #btn-voltar:hover {
     background: #666;
@@ -131,7 +149,7 @@
   <button id="btn-voltar">Voltar ao Menu</button>
   <div id="weapon-left">Nenhuma arma</div>
   <div id="score-display">Pontos: 0</div>
-  <canvas id="game-canvas" width="300" height="600"></canvas>
+  <canvas id="game-canvas" width="400" height="600"></canvas>
 </div>
 
 <script>
@@ -163,8 +181,8 @@
   const ctx = canvas.getContext('2d');
 
   const armasInfo = {
-    'Normal': { damage: 1, fireRate: 400, imgSrc: 'https://i.imgur.com/ojS8Ksv.png', scale: 0.04, tirosParaQuebrar: 4, img: null },
-    'Pistola': { damage: 2, fireRate: 300, imgSrc: 'https://i.imgur.com/ciL6yLc.png', scale: 0.025, tirosParaQuebrar: 2, img: null }
+    'Normal': { damage: 1, fireRate: 400, imgSrc: 'https://i.imgur.com/ojS8Ksv.png', scale: 0.05, tirosParaQuebrar: 4, img: null },
+    'Pistola': { damage: 2, fireRate: 300, imgSrc: 'https://i.imgur.com/ciL6yLc.png', scale: 0.03, tirosParaQuebrar: 2, img: null }
   };
 
   // Carregar imagens armas
@@ -253,8 +271,8 @@
     if (img && img.complete) {
       const i = document.createElement('img');
       i.src = img.src;
-      i.style.maxWidth = '45px';
-      i.style.maxHeight = '45px';
+      i.style.maxWidth = '60px';
+      i.style.maxHeight = '60px';
       weaponLeft.appendChild(i);
     } else {
       weaponLeft.textContent = arma.name;
@@ -285,7 +303,7 @@
         y: 0,
         width: 40,
         height: 40,
-        speedY: 1.5,  // velocidade reduzida para cair mais devagar
+        speedY: 2,  // caiu a velocidade pra 2
         slowed: false,
         vida: armasInfo['Normal'].tirosParaQuebrar
       });
@@ -332,7 +350,7 @@
     for (let i = caixas.length - 1; i >= 0; i--) {
       const box = caixas[i];
       if (!box.slowed && box.y >= canvas.height / 2) {
-        box.speedY = 0.7;  // também reduz a velocidade ao passar da metade da tela
+        box.speedY = 1;
         box.slowed = true;
       }
       box.y += box.speedY;
@@ -492,4 +510,5 @@
 })();
 </script>
 
-</body
+</body>
+</html>
