@@ -16,7 +16,6 @@
   }
   #wrapper {
     position: relative;
-    /* width e height definidos via JS */
     transform-origin: center center;
     box-shadow: 0 0 15px #000;
     border-radius: 15px;
@@ -162,7 +161,7 @@
   </div>
 
 <script>
-(() => {
+document.addEventListener('DOMContentLoaded', () => {
   const STORAGE_KEY = 'jogo2d_contas';
   let contas = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
   let userAtivo = null;
@@ -510,4 +509,8 @@
     mostrarTela(lobbyScreen);
   };
 
-  // Ajustar wrapper para
+  // Ajustar wrapper para rotação paisagem no celular
+  function ajustarOrientacao() {
+    const wrapper = document.getElementById('wrapper');
+    if (window.matchMedia("(orientation: portrait)").matches) {
+      wrapper.style.transform = 'rotate(90
