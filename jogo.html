@@ -475,26 +475,46 @@
   };
 
   btnSendCode.onclick = () => {
-    codeMessage.textContent = '';
-    codeMessage.style.color = '#f44';
-    const code = inputCode.value.trim();
-    if (code === '2026') {
-      const inv = contas[userAtivo].inventory;
-      if (!inv.includes('Pistola')) {
-        inv.push('Pistola');
-        contas[userAtivo].equipped = 'Pistola';
-        salvarContas();
-        atualizarInventario();
-        codeMessage.style.color = '#4f4';
-        codeMessage.textContent = 'Código aceito! Pistola adicionada.';
-      } else {
-        codeMessage.style.color = '#4a4';
-        codeMessage.textContent = 'Você já tem a pistola.';
-      }
-    } else {
-      codeMessage.textContent = 'Código incorreto.';
+  codeMessage.textContent = '';
+  codeMessage.style.color = '#f44';
+  const code = inputCode.value.trim();
+
+  if (code === '2026') {
+    const inv = contas[userAtivo].inventory;
+    if (!inv.includes('Pistola')) {
+      inv.push('Pistola');
+      contas[userAtivo].equipped = 'Pistola';
+      salvarContas();
+      atualizarInventario();
+      codeMessage.style.color = '#4f4';
+      codeMessage.textContent = 'Código aceito! Pistola adicionada.';
+    } 
+    else {
+      codeMessage.style.color = '#4a4';
+      codeMessage.textContent = 'Você já tem a pistola.';
     }
-  };
+  }
+
+  else if (code === 'batatinho2.0') {
+    const inv = contas[userAtivo].inventory;
+    if (!inv.includes('Sniper')) {
+      inv.push('Sniper');
+      contas[userAtivo].equipped = 'Sniper';
+      salvarContas();
+      atualizarInventario();
+      codeMessage.style.color = '#4f4';
+      codeMessage.textContent = 'Código aceito! Sniper adicionada.';
+    } 
+    else {
+      codeMessage.style.color = '#4a4';
+      codeMessage.textContent = 'Você já tem a sniper.';
+    }
+  }
+
+  else {
+    codeMessage.textContent = 'Código incorreto.';
+  }
+};
 
   btnPlay.onclick = () => {
     if (!contas[userAtivo].equipped) {
