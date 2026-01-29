@@ -3,80 +3,39 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=600, height=400, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Jogo 2D Completo</title>
+<title>Troca de Telas Básica</title>
 <style>
   body, html {
-    margin: 0; padding: 0; width: 600px; height: 400px; background: #222; color: #eee;
-    font-family: Arial, sans-serif; overflow: hidden;
+    margin: 0; padding: 0; width: 600px; height: 400px;
+    background: #222; color: #eee;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
     display: flex; justify-content: center; align-items: center;
   }
   .screen {
-    width: 600px; height: 400px; background: #333; padding: 15px; box-sizing: border-box;
-    display: none; position: relative; flex-direction: column;
+    display: none;
+    width: 600px; height: 400px;
+    background: #333;
+    padding: 20px;
+    box-sizing: border-box;
   }
-  .screen.active { display: flex; }
-  input, button {
-    width: 100%; margin: 5px 0; padding: 8px; font-size: 16px;
-    border-radius: 5px; border: none; outline: none;
+  .screen.active {
+    display: block;
+  }
+  button, input {
+    font-size: 16px;
+    padding: 8px;
+    margin: 5px 0;
+    width: 100%;
+    border-radius: 5px;
+    border: none;
   }
   button {
-    background: #555; color: #eee; cursor: pointer;
+    background: #555;
+    color: white;
+    cursor: pointer;
   }
   button:hover {
-    background: #666;
-  }
-  #login-message, #code-message {
-    margin-top: 5px; font-weight: bold; min-height: 20px;
-  }
-  #lobby-screen {
-    display: flex; flex-direction: column;
-  }
-  #buttons-row {
-    display: flex; justify-content: space-between; margin-top: 10px;
-  }
-  #code-area {
-    width: 160px; display: flex; flex-direction: column;
-  }
-  #inventory {
-    background: #444; padding: 10px; border-radius: 6px; width: 380px; height: 100px; overflow-y: auto;
-  }
-  #inventory button {
-    margin: 5px; min-width: 80px; cursor: pointer;
-  }
-  #inventory button.selected {
-    background-color: #4a4;
-  }
-  #player-info {
-    position: absolute; top: 10px; right: 10px; color: #eee; font-weight: bold; user-select: none;
-    text-align: right;
-  }
-  #game-screen {
-    position: relative; flex-direction: row; align-items: center; background: #111;
-  }
-  #weapon-left {
-    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-    width: 80px; height: 80px; background: #222; border-radius: 10px;
-    display: flex; justify-content: center; align-items: center;
-    user-select: none;
-  }
-  #weapon-left img {
-    max-width: 60px; max-height: 60px; pointer-events: none;
-  }
-  #game-canvas {
-    margin-left: 100px; background: #222; border-radius: 10px;
-    cursor: crosshair;
-    width: 600px; height: 400px;
-  }
-  #score-display {
-    position: absolute; top: 10px; right: 10px; color: #fff;
-    font-size: 20px; font-weight: bold; user-select: none;
-  }
-  #btn-voltar {
-    position: absolute; top: 10px; left: 10px;
-    background: #555; padding: 8px 12px; border-radius: 6px;
-    border: none; color: white; cursor: pointer;
-  }
-  #btn-voltar:hover {
     background: #666;
   }
 </style>
@@ -85,9 +44,9 @@
 
 <!-- LOGIN -->
 <div id="login-screen" class="screen active">
-  <h2>Login / Criar Conta</h2>
-  <input id="username" type="text" placeholder="Nome de usuário" autocomplete="off" />
-  <input id="password" type="password" placeholder="Senha" autocomplete="off" />
+  <h2>Login</h2>
+  <input id="username" placeholder="Nome de usuário" />
+  <input id="password" type="password" placeholder="Senha" />
   <button id="btn-login">Logar</button>
   <button id="btn-create">Criar Conta</button>
   <p id="login-message"></p>
@@ -96,34 +55,109 @@
 <!-- LOBBY -->
 <div id="lobby-screen" class="screen">
   <h2>Lobby</h2>
+  <p>Bem-vindo, <span id="player-name"></span>!</p>
   <button id="btn-play">Jogar</button>
-  <div id="player-info">
-    Jogador: <span id="player-name"></span><br />
-    Pontos: <span id="player-points">0</span>
-  </div>
-  <div id="buttons-row">
-    <div id="code-area">
-      <input id="code-input" type="text" placeholder="Insira código" autocomplete="off" />
-      <button id="btn-send-code">Enviar Código</button>
-      <p id="code-message"></p>
-    </div>
-    <div id="inventory">
-      <strong>Inventário:</strong><br />
-      <div id="weapon-list"></div>
-    </div>
-  </div>
+  <button id="btn-logout">Sair</button>
 </div>
 
 <!-- JOGO -->
 <div id="game-screen" class="screen">
-  <button id="btn-voltar">Voltar ao Menu</button>
-  <div id="weapon-left">Nenhuma arma</div>
-  <div id="score-display">Pontos: 0</div>
-  <canvas id="game-canvas" width="600" height="400"></canvas>
+  <h2>Jogo</h2>
+  <button id="btn-voltar">Voltar ao Lobby</button>
+  <p>Aqui vai o jogo...</p>
 </div>
 
 <script>
-  // Script vai aqui na próxima parte
+  // Seleção das telas
+  const loginScreen = document.getElementById('login-screen');
+  const lobbyScreen = document.getElementById('lobby-screen');
+  const gameScreen = document.getElementById('game-screen');
+
+  // Inputs e botões login
+  const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
+  const btnLogin = document.getElementById('btn-login');
+  const btnCreate = document.getElementById('btn-create');
+  const loginMessage = document.getElementById('login-message');
+
+  // Lobby
+  const playerNameSpan = document.getElementById('player-name');
+  const btnPlay = document.getElementById('btn-play');
+  const btnLogout = document.getElementById('btn-logout');
+
+  // Jogo
+  const btnVoltar = document.getElementById('btn-voltar');
+
+  // Armazenamento simples de contas no localStorage
+  const STORAGE_KEY = 'jogo2d_contas';
+  let contas = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+  let userAtivo = null;
+
+  function salvarContas() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(contas));
+  }
+
+  // Função para trocar telas
+  function mostrarTela(tela) {
+    [loginScreen, lobbyScreen, gameScreen].forEach(s => s.classList.remove('active'));
+    tela.classList.add('active');
+  }
+
+  // Criar conta
+  btnCreate.onclick = () => {
+    loginMessage.textContent = '';
+    const user = usernameInput.value.trim();
+    const pass = passwordInput.value;
+    if (!user || !pass) {
+      loginMessage.textContent = 'Preencha nome e senha.';
+      return;
+    }
+    if (contas[user]) {
+      loginMessage.textContent = 'Nome indisponível.';
+      return;
+    }
+    contas[user] = { password: pass };
+    salvarContas();
+    loginMessage.style.color = 'green';
+    loginMessage.textContent = 'Conta criada! Faça login.';
+  };
+
+  // Logar
+  btnLogin.onclick = () => {
+    loginMessage.textContent = '';
+    const user = usernameInput.value.trim();
+    const pass = passwordInput.value;
+    if (!user || !pass) {
+      loginMessage.textContent = 'Preencha nome e senha.';
+      return;
+    }
+    if (contas[user] && contas[user].password === pass) {
+      userAtivo = user;
+      usernameInput.value = '';
+      passwordInput.value = '';
+      loginMessage.textContent = '';
+      playerNameSpan.textContent = userAtivo;
+      mostrarTela(lobbyScreen);
+    } else {
+      loginMessage.textContent = 'Usuário ou senha incorretos.';
+    }
+  };
+
+  // Botão jogar
+  btnPlay.onclick = () => {
+    mostrarTela(gameScreen);
+  };
+
+  // Voltar ao lobby do jogo
+  btnVoltar.onclick = () => {
+    mostrarTela(lobbyScreen);
+  };
+
+  // Sair para login
+  btnLogout.onclick = () => {
+    userAtivo = null;
+    mostrarTela(loginScreen);
+  };
 </script>
 
 </body>
