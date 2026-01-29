@@ -2,19 +2,33 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Jogo 2D - Lobby com Armas Imagens</title>
+<meta name="viewport" content="width=600, height=400, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Jogo 2D Landscape</title>
 <style>
   body, html {
-    margin: 0; padding: 0; font-family: Arial, sans-serif; background: #222; color: #eee;
-    height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 0; padding: 0; overflow: hidden;
+    width: 600px;
+    height: 400px;
+    background: #222;
+    color: #eee;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
   #login-screen, #lobby-screen, #game-screen {
-    width: 100%; max-width: 700px; background: #333; padding: 20px; border-radius: 8px; display: none;
+    width: 600px; height: 400px;
+    background: #333;
+    padding: 15px;
+    border-radius: 8px;
+    box-sizing: border-box;
+    display: none;
+    position: relative;
   }
   input, button {
-    padding: 8px; margin: 5px 0; width: 100%; border-radius: 4px; border: none;
-    font-size: 16px;
+    padding: 8px; margin: 5px 0; border-radius: 4px; border: none; font-size: 16px;
+    width: 100%;
   }
   button {
     background: #555; color: #eee; cursor: pointer;
@@ -24,16 +38,15 @@
   }
   #lobby-screen {
     display: flex; flex-direction: column; gap: 12px;
-    position: relative;
   }
   #buttons-row {
     display: flex; justify-content: space-between; gap: 10px;
   }
   #code-area {
-    display: flex; flex-direction: column; width: 150px;
+    display: flex; flex-direction: column; width: 160px;
   }
   #inventory {
-    margin-top: 10px; background: #444; padding: 10px; border-radius: 5px;
+    margin-top: 10px; background: #444; padding: 10px; border-radius: 5px; height: 100px; overflow-y: auto;
   }
   #inventory button {
     width: auto; margin-right: 10px;
@@ -71,6 +84,8 @@
     border-radius: 10px;
     cursor: crosshair;
     flex-shrink: 0;
+    width: 600px;
+    height: 400px;
   }
   #score-display {
     position: absolute;
@@ -106,6 +121,10 @@
     font-weight: bold;
     user-select: none;
   }
+  #login-message, #code-message {
+    margin-top: 6px;
+    font-weight: bold;
+  }
 </style>
 </head>
 <body>
@@ -113,11 +132,11 @@
 <!-- Login e criar conta -->
 <div id="login-screen">
   <h2>Login / Criar Conta</h2>
-  <input type="text" id="username" placeholder="Nome de usuário" />
-  <input type="password" id="password" placeholder="Senha" />
+  <input type="text" id="username" placeholder="Nome de usuário" autocomplete="off" />
+  <input type="password" id="password" placeholder="Senha" autocomplete="off" />
   <button id="btn-login">Logar</button>
   <button id="btn-create">Criar Conta</button>
-  <p id="login-message" style="color: #f44;"></p>
+  <p id="login-message"></p>
 </div>
 
 <!-- Lobby -->
@@ -132,9 +151,9 @@
 
   <div id="buttons-row">
     <div id="code-area">
-      <input type="text" id="code-input" placeholder="Insira código" />
+      <input type="text" id="code-input" placeholder="Insira código" autocomplete="off" />
       <button id="btn-send-code">Enviar Código</button>
-      <p id="code-message" style="color: #4f4;"></p>
+      <p id="code-message"></p>
     </div>
 
     <div id="settings-area">
@@ -183,7 +202,7 @@
 
   // Armas com propriedades: dano e delay entre tiros (ms)
   const armasInfo = {
-    'Normal': { damage: 1, fireRate: 400 }, // tiro mais rápido que antes
+    'Normal': { damage: 1, fireRate: 400 },
     'Pistola': { damage: 2, fireRate: 300 }
   };
 
@@ -217,7 +236,6 @@
     const inventario = contas[userAtivo].inventory;
     let equipado = contas[userAtivo].equipped;
 
-    // Garante arma normal se nada equipado
     if (!equipado || !inventario.includes(equipado)) {
       equipado = 'Normal';
       contas[userAtivo].equipped = 'Normal';
@@ -252,6 +270,7 @@
 
   btnCreate.onclick = () => {
     loginMessage.textContent = '';
+    loginMessage.style.color = '#f44';
     const username = inputUsername.value.trim();
     const password = inputPassword.value;
     if (!username || !password) {
@@ -262,13 +281,13 @@
       loginMessage.style.color = '#4f4';
       loginMessage.textContent = 'Conta criada com sucesso! Faça login.';
     } else {
-      loginMessage.style.color = '#f44';
       loginMessage.textContent = 'Nome indisponível.';
     }
   };
 
   btnLogin.onclick = () => {
     loginMessage.textContent = '';
+    loginMessage.style.color = '#f44';
     const username = inputUsername.value.trim();
     const password = inputPassword.value;
     if (!username || !password) {
@@ -280,13 +299,13 @@
       loginMessage.textContent = 'Logado com sucesso!';
       mostrarLobby();
     } else {
-      loginMessage.style.color = '#f44';
       loginMessage.textContent = 'Usuário ou senha incorretos.';
     }
   };
 
   btnSendCode.onclick = () => {
     codeMessage.textContent = '';
+    codeMessage.style.color = '#f44';
     const code = inputCode.value.trim();
     if (code === '2026') {
       const inventario = contas[userAtivo].inventory;
@@ -302,13 +321,11 @@
         codeMessage.textContent = 'Você já tem a pistola.';
       }
     } else {
-      codeMessage.style.color = '#f44';
       codeMessage.textContent = 'Código incorreto.';
     }
   };
 
   btnPlay.onclick = () => {
-    // Garante arma equipada (normal se nada)
     if (!contas[userAtivo].equipped) {
       contas[userAtivo].equipped = 'Normal';
       salvarContas();
@@ -352,7 +369,6 @@
   let tiros = [];
   let pontos = 0;
 
-  // Pos e tamanho da arma no canvas
   const arma = {
     name: null,
     x: 60,
@@ -374,7 +390,6 @@
     'Pistola': new Image()
   };
 
-  // Cria uma imagem simples para arma normal
   function criarImagemNormal() {
     const canvasImg = document.createElement('canvas');
     canvasImg.width = 20;
@@ -410,7 +425,7 @@
         height: 40,
         speedY: 3,
         slowed: false,
-        vida: 4 // vida padrão 4 tiros pra normal
+        vida: 4
       });
     }, 2000);
 
@@ -420,7 +435,6 @@
   function loopJogo() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Atualizar caixas
     for (let i = caixas.length - 1; i >= 0; i--) {
       let box = caixas[i];
 
@@ -430,7 +444,6 @@
       }
       box.y += box.speedY;
 
-      // Desenhar caixas com cor proporcional à vida
       let vidaRatio = box.vida / 4;
       if (vidaRatio < 0) vidaRatio = 0;
       let r = Math.floor(187 * vidaRatio + 68 * (1 - vidaRatio));
@@ -440,34 +453,30 @@
 
       ctx.fillRect(box.x, box.y, box.width, box.height);
 
-      // Se a vida da caixa acabar, remove e soma ponto
       if (box.vida <= 0) {
         caixas.splice(i, 1);
         pontos++;
-        contas[userAtivo].points = pontos; // salva pontos
+        contas[userAtivo].points = pontos;
         salvarContas();
         atualizarPlayerInfo();
         atualizarPontos();
         continue;
       }
 
-      // Remove se a caixa cair fora da tela (sem ponto)
       if (box.y > canvas.height - box.height) {
         caixas.splice(i, 1);
       }
     }
 
-    // Desenhar arma parada com imagem
     ctx.save();
     ctx.translate(arma.x, arma.y);
     ctx.rotate(arma.angle);
 
     const img = imagensArmas[arma.name];
     if (img && img.complete) {
-      const scale = 0.05;  // arma bem menor
+      const scale = 0.05;
       ctx.drawImage(img, -img.width/2 * scale, -img.height/2 * scale, img.width * scale, img.height * scale);
     } else {
-      // fallback: retângulo simples se a imagem não carregar
       ctx.fillStyle = '#666';
       ctx.fillRect(-arma.width/2, -arma.height/2, arma.width, arma.height);
       ctx.fillStyle = '#222';
@@ -475,7 +484,6 @@
     }
     ctx.restore();
 
-    // Atualizar e desenhar tiros
     for (let i = tiros.length -1; i >= 0; i--) {
       const t = tiros[i];
       ctx.beginPath();
@@ -487,7 +495,6 @@
       t.y += t.vy;
       t.life--;
 
-      // Checar colisão com caixas
       let acertou = false;
       for (let j = 0; j < caixas.length; j++) {
         const box = caixas[j];
@@ -513,7 +520,7 @@
     const now = Date.now();
     const fireRate = armasInfo[arma.name] ? armasInfo[arma.name].fireRate : 600;
     if (now - arma.lastFireTime < fireRate) {
-      return; // não atira antes do cooldown
+      return;
     }
     arma.lastFireTime = now;
 
@@ -523,4 +530,18 @@
 
     const dx = clickX - arma.x;
     const dy = clickY - arma.y;
-    arma.angle = Math.atan2
+    arma.angle = Math.atan2(dy, dx);
+
+    // Velocidade do tiro
+    const speed = 10;
+    const vx = Math.cos(arma.angle) * speed;
+    const vy = Math.sin(arma.angle) * speed;
+
+    tiros.push({
+      x: arma.x,
+      y: arma.y,
+      vx,
+      vy,
+      life: 60
+    });
+  });
