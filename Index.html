@@ -17,7 +17,7 @@
     align-items: center;
     justify-content: center;
   }
-  #login-screen, #lobby-screen, #game-screen {
+  .screen {
     width: 600px; height: 400px;
     background: #333;
     padding: 15px;
@@ -130,7 +130,7 @@
 <body>
 
 <!-- Login e criar conta -->
-<div id="login-screen">
+<div id="login-screen" class="screen">
   <h2>Login / Criar Conta</h2>
   <input type="text" id="username" placeholder="Nome de usuário" autocomplete="off" />
   <input type="password" id="password" placeholder="Senha" autocomplete="off" />
@@ -140,7 +140,7 @@
 </div>
 
 <!-- Lobby -->
-<div id="lobby-screen">
+<div id="lobby-screen" class="screen">
   <h2>Lobby</h2>
   <button id="btn-play">Jogar</button>
 
@@ -167,7 +167,7 @@
 </div>
 
 <!-- Tela de jogo -->
-<div id="game-screen">
+<div id="game-screen" class="screen">
   <button id="btn-voltar">Voltar ao Menu</button>
   <div id="weapon-left">Nenhuma arma</div>
   <div id="score-display">Pontos: 0</div>
@@ -335,7 +335,7 @@
   };
 
   btnVoltar.onclick = () => {
-    if (window.caixaInterval) clearInterval(window.caixaInterval);
+    pararJogo();
     mostrarLobby();
   };
 
@@ -368,6 +368,8 @@
   let caixas = [];
   let tiros = [];
   let pontos = 0;
+  let animationFrameId = null;
+  let caixaIntervalId = null;
 
   const arma = {
     name: null,
@@ -381,6 +383,7 @@
 
   function atualizarPontos() {
     scoreDisplay.textContent = 'Pontos: ' + pontos;
+    playerPointsSpan.textContent = pontos;
   }
 
   // Criar imagens das armas
@@ -408,7 +411,7 @@
   function iniciarJogo() {
     caixas = [];
     tiros = [];
-    pontos = 0;
+    pontos = contas[userAtivo].points || 0;
     atualizarPontos();
 
     arma.name = contas[userAtivo].equipped || 'Normal';
@@ -416,8 +419,8 @@
     arma.lastFireTime = 0;
     weaponLeft.textContent = arma.name;
 
-    if (window.caixaInterval) clearInterval(window.caixaInterval);
-    window.caixaInterval = setInterval(() => {
+    if (caixaIntervalId) clearInterval(caixaIntervalId);
+    caixaIntervalId = setInterval(() => {
       caixas.push({
         x: canvas.width - 40,
         y: 0,
@@ -429,7 +432,13 @@
       });
     }, 2000);
 
-    requestAnimationFrame(loopJogo);
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    animationFrameId = requestAnimationFrame(loopJogo);
+  }
+
+  function pararJogo() {
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    if (caixaIntervalId) clearInterval(caixaIntervalId);
   }
 
   function loopJogo() {
@@ -513,7 +522,7 @@
       }
     }
 
-    requestAnimationFrame(loopJogo);
+    animationFrameId = requestAnimationFrame(loopJogo);
   }
 
   canvas.addEventListener('click', (e) => {
@@ -528,20 +537,4 @@
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
 
-    const dx = clickX - arma.x;
-    const dy = clickY - arma.y;
-    arma.angle = Math.atan2(dy, dx);
-
-    // Velocidade do tiro
-    const speed = 10;
-    const vx = Math.cos(arma.angle) * speed;
-    const vy = Math.sin(arma.angle) * speed;
-
-    tiros.push({
-      x: arma.x,
-      y: arma.y,
-      vx,
-      vy,
-      life: 60
-    });
-  });
+    const
