@@ -2,9 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-
-<title>Jogo 2D</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jogo 2D Completo</title>
 
 <style>
 body,html{
@@ -12,79 +11,79 @@ margin:0;
 background:#222;
 color:white;
 font-family:Arial;
-height:100vh;
 display:flex;
 justify-content:center;
 align-items:center;
-overflow:hidden;
+height:100vh;
 }
 
 .screen{
 display:none;
 background:#333;
 padding:15px;
-border-radius:10px;
+width:600px;
+height:400px;
+position:relative;
 flex-direction:column;
-width:90vw;
-max-width:750px;
 }
 
 .screen.active{display:flex;}
 
 input,button{
-margin:5px 0;
-padding:10px;
-font-size:16px;
-border-radius:5px;
+padding:8px;
+margin:5px;
 border:none;
+border-radius:5px;
 }
 
-button{background:#555;color:white;}
+button{
+background:#555;
+color:white;
+}
 
-#game-area{
-position:relative;
+button:hover{background:#777;}
+
+#game-screen{
+width:600px;
+height:640px;
 background:#111;
-display:flex;
-height:360px;
 }
 
 #weapon-left{
+position:absolute;
+left:10px;
+top:50%;
+transform:translateY(-50%);
 width:80px;
+height:80px;
 background:#222;
 display:flex;
 justify-content:center;
 align-items:center;
+border-radius:10px;
 }
 
-#weapon-left img{
-max-width:60px;
-max-height:60px;
-}
-
-canvas{
+#game-canvas{
+margin-left:100px;
 background:#222;
+border-radius:10px;
 }
 
-#right-wall{
-width:40px;
-background:#0044ff;
-}
-
-#btnBack{
+#score-display{
 position:absolute;
-bottom:10px;
-left:10px;
-}
-
-#scoreGame{
-position:absolute;
-bottom:10px;
+top:10px;
 right:10px;
 font-size:20px;
 }
 
-.inventory button.selected{
-background:green;
+#btn-voltar{
+position:absolute;
+top:40px;
+left:10px;
+}
+
+#inventory button.selected{
+background:#2ecc71;
 }
 </style>
 </head>
@@ -92,221 +91,176 @@ background:green;
 <body>
 
 <!-- LOGIN -->
-<div id="login" class="screen active">
-<h2>Login / Criar Conta</h2>
-<input id="user" placeholder="Usuário">
-<input id="pass" type="password" placeholder="Senha">
-<button id="loginBtn">Login</button>
-<button id="createBtn">Criar Conta</button>
-<p id="loginMsg"></p>
+<div id="login-screen" class="screen active">
+<h2>Login</h2>
+<input id="username" placeholder="Usuário">
+<input id="password" type="password" placeholder="Senha">
+<button id="btn-login">Entrar</button>
+<button id="btn-create">Criar Conta</button>
+<p id="login-message"></p>
 </div>
 
 <!-- LOBBY -->
-<div id="lobby" class="screen">
+<div id="lobby-screen" class="screen">
 <h2>Lobby</h2>
+<button id="btn-play">Jogar</button>
+<button id="btn-shop">Loja</button>
 
-<p>Jogador: <span id="playerName"></span></p>
-<p>Pontos: <span id="playerPoints">0</span></p>
+<p>Jogador: <span id="player-name"></span></p>
+<p>Pontos: <span id="player-points"></span></p>
 
-<button id="playBtn">Jogar</button>
-<button id="shopBtn">Loja</button>
+<input id="code-input" placeholder="Código">
+<button id="btn-send-code">Enviar Código</button>
+<p id="code-message"></p>
 
-<input id="codeInput" placeholder="Código">
-<button id="sendCode">Enviar Código</button>
-<p id="codeMsg"></p>
-
-<h3>Inventário</h3>
-<div id="inventory" class="inventory"></div>
+<div id="inventory"></div>
 </div>
 
 <!-- LOJA -->
-<div id="shop" class="screen">
+<div id="shop-screen" class="screen">
 <h2>Loja</h2>
-<p>Pontos: <span id="shopPoints"></span></p>
-<button id="buyPistol">Comprar Pistola (1500)</button>
-<p id="shopMsg"></p>
-<button id="backLobby1">Voltar</button>
+<p>Pontos: <span id="shop-points"></span></p>
+<button id="buy-pistol">Comprar Pistola (1500)</button>
+<p id="shop-message"></p>
+<button id="btn-shop-back">Voltar</button>
 </div>
 
 <!-- GAME -->
-<div id="game" class="screen">
-
-<div id="game-area">
-<button id="btnBack">Menu</button>
+<div id="game-screen" class="screen">
+<button id="btn-voltar">Voltar</button>
 <div id="weapon-left"></div>
-<canvas id="canvas" width="600" height="360"></canvas>
-<div id="right-wall"></div>
-<div id="scoreGame">0</div>
-</div>
-
+<div id="score-display"></div>
+<canvas id="game-canvas" width="500" height="600"></canvas>
 </div>
 
 <script>
-let contas = JSON.parse(localStorage.getItem("contas")) || {};
-let usuario = null;
 
-const armas = {
-Normal:{shots:4,rate:400,img:"https://i.imgur.com/ojS8Ksv.png"},
-Pistola:{shots:2,rate:250,img:"https://i.imgur.com/ciL6yLc.png"}
+let contas = JSON.parse(localStorage.getItem("contas")) || {};
+let user = null;
+
+const armas={
+Normal:{dmg:1,rate:400,img:"https://i.imgur.com/ojS8Ksv.png"},
+Pistola:{dmg:2,rate:250,img:"https://i.imgur.com/ciL6yLc.png"}
 };
 
-let caixas=[];
+const loginScreen=login-screen;
+const lobbyScreen=lobby-screen;
+const shopScreen=shop-screen;
+const gameScreen=game-screen;
+
+const canvas=document.getElementById("game-canvas");
+const ctx=canvas.getContext("2d");
+
 let tiros=[];
+let caixas=[];
 let pontos=0;
-let armaAtual="Normal";
+let arma="Normal";
 let lastShot=0;
 
-const login=document.getElementById("login");
-const lobby=document.getElementById("lobby");
-const shop=document.getElementById("shop");
-const game=document.getElementById("game");
-
-function show(t){
-login.classList.remove("active");
-lobby.classList.remove("active");
-shop.classList.remove("active");
-game.classList.remove("active");
-t.classList.add("active");
+function show(scr){
+[loginScreen,lobbyScreen,shopScreen,gameScreen].forEach(s=>s.classList.remove("active"));
+scr.classList.add("active");
 }
 
-document.getElementById("createBtn").onclick=()=>{
-let u=user.value.trim();
-let p=pass.value;
-if(contas[u]){loginMsg.innerText="Nome indisponível";return;}
-contas[u]={pass:p,inv:["Normal"],equip:"Normal",points:0};
+btn-create.onclick=()=>{
+if(!username.value||!password.value) return;
+if(contas[username.value]) return;
+contas[username.value]={pass:password.value,points:0,inv:["Normal"]};
 localStorage.setItem("contas",JSON.stringify(contas));
-loginMsg.innerText="Conta criada";
-}
+alert("Conta criada");
+};
 
-document.getElementById("loginBtn").onclick=()=>{
-let u=user.value.trim();
-let p=pass.value;
-if(contas[u]&&contas[u].pass===p){
-usuario=u;
-updateLobby();
-show(lobby);
-}else loginMsg.innerText="Erro login";
+btn-login.onclick=()=>{
+let c=contas[username.value];
+if(c && c.pass===password.value){
+user=username.value;
+player-name.textContent=user;
+player-points.textContent=c.points;
+renderInv();
+show(lobbyScreen);
 }
+};
 
-function updateLobby(){
-playerName.innerText=usuario;
-playerPoints.innerText=contas[usuario].points;
+btn-play.onclick=()=>{
+pontos=contas[user].points;
+arma=contas[user].inv[0];
+show(gameScreen);
+loop();
+};
+
+btn-voltar.onclick=()=>{
+contas[user].points=pontos;
+localStorage.setItem("contas",JSON.stringify(contas));
+show(lobbyScreen);
+};
+
+btn-shop.onclick=()=>{
+shop-points.textContent=contas[user].points;
+show(shopScreen);
+};
+
+btn-shop-back.onclick=()=>show(lobbyScreen);
+
+buy-pistol.onclick=()=>{
+if(contas[user].inv.includes("Pistola")) return;
+if(contas[user].points>=1500){
+contas[user].points-=1500;
+contas[user].inv.push("Pistola");
+localStorage.setItem("contas",JSON.stringify(contas));
+shop-message.textContent="Comprado!";
+renderInv();
+}
+};
+
+btn-send-code.onclick=()=>{
+if(code-input.value==="2026"){
+if(!contas[user].inv.includes("Pistola")){
+contas[user].inv.push("Pistola");
+renderInv();
+}
+}
+};
+
+function renderInv(){
 inventory.innerHTML="";
-contas[usuario].inv.forEach(w=>{
+contas[user].inv.forEach(a=>{
 let b=document.createElement("button");
-b.innerText=w;
-if(w===contas[usuario].equip)b.classList.add("selected");
-b.onclick=()=>{
-contas[usuario].equip=w;
-save();
-updateLobby();
-}
+b.textContent=a;
+b.onclick=()=>arma=a;
 inventory.appendChild(b);
 });
 }
 
-function save(){
-localStorage.setItem("contas",JSON.stringify(contas));
-}
-
-sendCode.onclick=()=>{
-if(codeInput.value==="2026"){
-if(!contas[usuario].inv.includes("Pistola")){
-contas[usuario].inv.push("Pistola");
-save();
-updateLobby();
-codeMsg.innerText="Pistola ganha!";
-}else codeMsg.innerText="Já tem.";
-}else codeMsg.innerText="Código errado";
-}
-
-shopBtn.onclick=()=>{
-shopPoints.innerText=contas[usuario].points;
-shopMsg.innerText="";
-show(shop);
-}
-
-backLobby1.onclick=()=>show(lobby);
-
-buyPistol.onclick=()=>{
-if(contas[usuario].inv.includes("Pistola")){
-shopMsg.innerText="Já possui";
-return;
-}
-if(contas[usuario].points>=1500){
-contas[usuario].points-=1500;
-contas[usuario].inv.push("Pistola");
-contas[usuario].equip="Pistola";
-save();
-shopMsg.innerText="Comprado!";
-}else shopMsg.innerText="Sem pontos";
-}
-
-playBtn.onclick=()=>{
-armaAtual=contas[usuario].equip||"Normal";
-pontos=contas[usuario].points;
-scoreGame.innerText=pontos;
-startGame();
-show(game);
-}
-
-btnBack.onclick=()=>{
-contas[usuario].points=pontos;
-save();
-updateLobby();
-show(lobby);
-}
-
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
-
-function startGame(){
-caixas=[];
-tiros=[];
-setInterval(()=>{spawnBox()},2000);
-requestAnimationFrame(loop);
-}
-
-function spawnBox(){
-caixas.push({x:550,y:0,hp:armas.Normal.shots});
-}
-
 canvas.onclick=e=>{
 let now=Date.now();
-if(now-lastShot<armas[armaAtual].rate)return;
+if(now-lastShot<armas[arma].rate) return;
 lastShot=now;
-tiros.push({x:40,y:180});
-}
+tiros.push({x:50,y:canvas.height/2});
+};
 
 function loop(){
-ctx.clearRect(0,0,600,360);
+ctx.clearRect(0,0,500,600);
 
-caixas.forEach((b,i)=>{
-b.y+=2;
+if(Math.random()<0.02){
+caixas.push({x:400,y:0});
+}
+
+caixas.forEach(c=>{
+c.y+=2;
 ctx.fillStyle="red";
-ctx.fillRect(b.x,b.y,40,40);
-
-tiros.forEach((t,j)=>{
-if(t.x>b.x&&t.x<b.x+40&&t.y>b.y&&t.y<b.y+40){
-b.hp--;
-tiros.splice(j,1);
-if(b.hp<=0){
-caixas.splice(i,1);
-pontos++;
-scoreGame.innerText=pontos;
-}
-}
-});
+ctx.fillRect(c.x,c.y,40,40);
 });
 
 tiros.forEach(t=>{
-t.x+=10;
+t.x+=8;
 ctx.fillStyle="yellow";
-ctx.fillRect(t.x,t.y,6,3);
+ctx.fillRect(t.x,t.y,6,4);
 });
 
+score-display.textContent="Pontos: "+pontos;
 requestAnimationFrame(loop);
 }
+
 </script>
 
 </body>
