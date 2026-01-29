@@ -16,9 +16,7 @@
   }
   #wrapper {
     position: relative;
-    width: 400px;  /* Altura desejada do jogo */
-    height: 600px; /* Largura desejada do jogo */
-    transform: rotate(90deg);
+    /* width e height definidos via JS */
     transform-origin: center center;
     box-shadow: 0 0 15px #000;
     border-radius: 15px;
@@ -27,6 +25,7 @@
     flex-direction: column;
     padding: 15px;
     box-sizing: border-box;
+    transition: transform 0.3s ease;
   }
   .screen {
     display: none;
@@ -498,3 +497,17 @@
       }
     } else {
       codeMessage.textContent = 'Código incorreto.';
+    }
+  };
+
+  btnPlay.onclick = () => {
+    iniciarJogo();
+    mostrarTela(gameScreen);
+  };
+
+  btnVoltar.onclick = () => {
+    pararJogo();
+    mostrarTela(lobbyScreen);
+  };
+
+  // Ajustar wrapper para
