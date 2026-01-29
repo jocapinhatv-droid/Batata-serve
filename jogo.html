@@ -2,23 +2,37 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=600, height=400, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Jogo 2D Completo</title>
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Jogo 2D Paisagem Mobile Completo</title>
 <style>
-  body, html {
-    margin: 0; padding: 0; width: 600px; height: 400px;
+  html, body {
+    margin: 0; padding: 0; height: 100%; width: 100%;
     background: #222; color: #eee;
-    font-family: Arial, sans-serif;
     overflow: hidden;
-    display: flex; justify-content: center; align-items: center;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  #wrapper {
+    position: relative;
+    width: 400px;  /* Altura desejada do jogo */
+    height: 600px; /* Largura desejada do jogo */
+    transform: rotate(90deg);
+    transform-origin: center center;
+    box-shadow: 0 0 15px #000;
+    border-radius: 15px;
+    background: #333;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    box-sizing: border-box;
   }
   .screen {
     display: none;
-    width: 600px; height: 400px;
-    background: #333;
-    padding: 15px;
-    box-sizing: border-box;
     flex-direction: column;
+    width: 600px;
+    height: 400px;
   }
   .screen.active {
     display: flex;
@@ -43,25 +57,35 @@
   }
   #buttons-row {
     display: flex; justify-content: space-between; margin-top: 10px;
+    width: 600px;
   }
   #code-area {
     width: 160px; display: flex; flex-direction: column;
   }
   #inventory {
     background: #444; padding: 10px; border-radius: 6px; width: 380px; height: 100px; overflow-y: auto;
+    color: #eee;
   }
   #inventory button {
     margin: 5px; min-width: 80px; cursor: pointer;
+    background: #666; color: white;
+    border-radius: 6px;
+    border: none;
   }
   #inventory button.selected {
     background-color: #4a4;
   }
   #player-info {
-    position: absolute; top: 10px; right: 10px; color: #eee; font-weight: bold; user-select: none;
+    color: #eee; font-weight: bold; user-select: none;
     text-align: right;
+    margin-bottom: 5px;
   }
   #game-screen {
-    position: relative; flex-direction: row; align-items: center; background: #111;
+    position: relative;
+    background: #111;
+    border-radius: 15px;
+    width: 600px;
+    height: 400px;
   }
   #weapon-left {
     position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
@@ -72,11 +96,6 @@
   #weapon-left img {
     max-width: 60px; max-height: 60px; pointer-events: none;
   }
-  #game-canvas {
-    margin-left: 100px; background: #222; border-radius: 10px;
-    cursor: crosshair;
-    width: 600px; height: 400px;
-  }
   #score-display {
     position: absolute; top: 10px; right: 10px; color: #fff;
     font-size: 20px; font-weight: bold; user-select: none;
@@ -85,52 +104,63 @@
     position: absolute; top: 10px; left: 10px;
     background: #555; padding: 8px 12px; border-radius: 6px;
     border: none; color: white; cursor: pointer;
+    z-index: 10;
   }
   #btn-voltar:hover {
     background: #666;
   }
+  #game-canvas {
+    border-radius: 10px;
+    background: #222;
+    cursor: crosshair;
+    display: block;
+    margin-left: 100px;
+  }
 </style>
 </head>
 <body>
+  <div id="wrapper">
 
-<!-- LOGIN -->
-<div id="login-screen" class="screen active">
-  <h2>Login / Criar Conta</h2>
-  <input id="username" type="text" placeholder="Nome de usuário" autocomplete="off" />
-  <input id="password" type="password" placeholder="Senha" autocomplete="off" />
-  <button id="btn-login">Logar</button>
-  <button id="btn-create">Criar Conta</button>
-  <p id="login-message"></p>
-</div>
-
-<!-- LOBBY -->
-<div id="lobby-screen" class="screen">
-  <h2>Lobby</h2>
-  <button id="btn-play">Jogar</button>
-  <div id="player-info">
-    Jogador: <span id="player-name"></span><br />
-    Pontos: <span id="player-points">0</span>
-  </div>
-  <div id="buttons-row">
-    <div id="code-area">
-      <input id="code-input" type="text" placeholder="Insira código" autocomplete="off" />
-      <button id="btn-send-code">Enviar Código</button>
-      <p id="code-message"></p>
+    <!-- LOGIN -->
+    <div id="login-screen" class="screen active">
+      <h2>Login / Criar Conta</h2>
+      <input id="username" type="text" placeholder="Nome de usuário" autocomplete="off" />
+      <input id="password" type="password" placeholder="Senha" autocomplete="off" />
+      <button id="btn-login">Logar</button>
+      <button id="btn-create">Criar Conta</button>
+      <p id="login-message"></p>
     </div>
-    <div id="inventory">
-      <strong>Inventário:</strong><br />
-      <div id="weapon-list"></div>
-    </div>
-  </div>
-</div>
 
-<!-- JOGO -->
-<div id="game-screen" class="screen">
-  <button id="btn-voltar">Voltar ao Menu</button>
-  <div id="weapon-left">Nenhuma arma</div>
-  <div id="score-display">Pontos: 0</div>
-  <canvas id="game-canvas" width="600" height="400"></canvas>
-</div>
+    <!-- LOBBY -->
+    <div id="lobby-screen" class="screen">
+      <h2>Lobby</h2>
+      <button id="btn-play">Jogar</button>
+      <div id="player-info">
+        Jogador: <span id="player-name"></span><br />
+        Pontos: <span id="player-points">0</span>
+      </div>
+      <div id="buttons-row">
+        <div id="code-area">
+          <input id="code-input" type="text" placeholder="Insira código" autocomplete="off" />
+          <button id="btn-send-code">Enviar Código</button>
+          <p id="code-message"></p>
+        </div>
+        <div id="inventory">
+          <strong>Inventário:</strong><br />
+          <div id="weapon-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JOGO -->
+    <div id="game-screen" class="screen">
+      <button id="btn-voltar">Voltar ao Menu</button>
+      <div id="weapon-left">Nenhuma arma</div>
+      <div id="score-display">Pontos: 0</div>
+      <canvas id="game-canvas" width="600" height="400"></canvas>
+    </div>
+
+  </div>
 
 <script>
 (() => {
@@ -468,27 +498,3 @@
       }
     } else {
       codeMessage.textContent = 'Código incorreto.';
-    }
-  };
-
-  btnPlay.onclick = () => {
-    if (!contas[userAtivo].equipped) {
-      contas[userAtivo].equipped = 'Normal';
-      salvarContas();
-    }
-    iniciarJogo();
-    mostrarTela(gameScreen);
-  };
-
-  btnVoltar.onclick = () => {
-    pararJogo();
-    mostrarTela(lobbyScreen);
-    atualizarInventario();
-    atualizarPlayerInfo();
-  };
-
-})();
-</script>
-
-</body>
-  </html>
