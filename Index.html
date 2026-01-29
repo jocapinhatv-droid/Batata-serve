@@ -7,21 +7,16 @@
 <style>
   body, html {
     margin: 0; padding: 0; overflow: hidden;
-    width: 600px;
-    height: 400px;
+    width: 600px; height: 400px;
     background: #222;
     color: #eee;
     font-family: Arial, sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
   .screen {
     width: 600px; height: 400px;
     background: #333;
     padding: 15px;
-    border-radius: 8px;
     box-sizing: border-box;
     display: none;
     position: relative;
@@ -78,6 +73,11 @@
     user-select: none;
     z-index: 2;
   }
+  #weapon-left img {
+    max-width: 60px;
+    max-height: 60px;
+    pointer-events: none;
+  }
   #game-canvas {
     margin-left: 100px;
     background: #222;
@@ -129,8 +129,8 @@
 </head>
 <body>
 
-<!-- Login e criar conta -->
-<div id="login-screen" class="screen">
+<!-- Tela de login/criar conta -->
+<div id="login-screen" class="screen" style="display:block;">
   <h2>Login / Criar Conta</h2>
   <input type="text" id="username" placeholder="Nome de usuário" autocomplete="off" />
   <input type="password" id="password" placeholder="Senha" autocomplete="off" />
@@ -139,7 +139,7 @@
   <p id="login-message"></p>
 </div>
 
-<!-- Lobby -->
+<!-- Tela do Lobby -->
 <div id="lobby-screen" class="screen">
   <h2>Lobby</h2>
   <button id="btn-play">Jogar</button>
@@ -166,7 +166,7 @@
   </div>
 </div>
 
-<!-- Tela de jogo -->
+<!-- Tela do jogo -->
 <div id="game-screen" class="screen">
   <button id="btn-voltar">Voltar ao Menu</button>
   <div id="weapon-left">Nenhuma arma</div>
@@ -175,11 +175,12 @@
 </div>
 
 <script>
+  // === Dados e variáveis ===
   const STORAGE_KEY = 'jogo2d_contas';
-
   let contas = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
   let userAtivo = null;
 
+  // Elementos HTML
   const loginScreen = document.getElementById('login-screen');
   const lobbyScreen = document.getElementById('lobby-screen');
   const gameScreen = document.getElementById('game-screen');
@@ -200,23 +201,46 @@
   const inputPassword = document.getElementById('password');
   const inputCode = document.getElementById('code-input');
 
-  // Armas com propriedades: dano e delay entre tiros (ms)
+  // Armas: dano e fireRate(ms)
   const armasInfo = {
-    'Normal': { damage: 1, fireRate: 400 },
-    'Pistola': { damage: 2, fireRate: 300 }
+    'Normal': { damage: 1, fireRate: 400, img: null, imgSrc: null },
+    'Pistola': { damage: 2, fireRate: 300, img: null, imgSrc: 'https://i.imgur.com/ciL6yLc.png' }
   };
 
+  // Carrega as imagens das armas
+  function carregarImagens() {
+    for (const nome in armasInfo) {
+      let img = new Image();
+      if (armasInfo[nome].imgSrc) {
+        img.src = armasInfo[nome].imgSrc;
+      } else {
+        // Criar uma imagem simples pra arma normal
+        let cnv = document.createElement('canvas');
+        cnv.width = 20;
+        cnv.height = 20;
+        let ctxCnv = cnv.getContext('2d');
+        ctxCnv.fillStyle = '#666';
+        ctxCnv.fillRect(4, 8, 12, 4);
+        ctxCnv.fillStyle = '#444';
+        ctxCnv.fillRect(8, 6, 4, 2);
+        img.src = cnv.toDataURL();
+      }
+      armasInfo[nome].img = img;
+    }
+  }
+  carregarImagens();
+
+  // Salvar contas no localStorage
   function salvarContas() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(contas));
   }
 
+  // Criar conta, retorna true se criou, false se nome já existe
   function criarConta(username, password) {
-    if (contas[username]) {
-      return false;
-    }
+    if (contas[username]) return false;
     contas[username] = {
       password,
-      inventory: ['Normal'], // Começa com arma normal
+      inventory: ['Normal'],
       equipped: 'Normal',
       points: 0
     };
@@ -224,6 +248,7 @@
     return true;
   }
 
+  // Logar, retorna true se ok
   function logar(username, password) {
     if (contas[username] && contas[username].password === password) {
       userAtivo = username;
@@ -232,6 +257,7 @@
     return false;
   }
 
+  // Atualiza inventário e arma equipada no lobby
   function atualizarInventario() {
     const inventario = contas[userAtivo].inventory;
     let equipado = contas[userAtivo].equipped;
@@ -262,12 +288,25 @@
     });
   }
 
+  // Atualiza nome e pontos do jogador no lobby
   function atualizarPlayerInfo() {
     playerNameSpan.textContent = userAtivo || '';
     const pontosSalvos = contas[userAtivo]?.points || 0;
     playerPointsSpan.textContent = pontosSalvos;
   }
 
+  // Mostrar só uma tela
+  function mostrarTela(tela) {
+    loginScreen.style.display = 'none';
+    lobbyScreen.style.display = 'none';
+    gameScreen.style.display = 'none';
+    tela.style.display = 'block';
+  }
+
+  // Mostrar login inicialmente
+  mostrarTela(loginScreen);
+
+  // Eventos botão criar conta
   btnCreate.onclick = () => {
     loginMessage.textContent = '';
     loginMessage.style.color = '#f44';
@@ -279,12 +318,13 @@
     }
     if (criarConta(username, password)) {
       loginMessage.style.color = '#4f4';
-      loginMessage.textContent = 'Conta criada com sucesso! Faça login.';
+      loginMessage.textContent = 'Conta criada! Agora faça login.';
     } else {
       loginMessage.textContent = 'Nome indisponível.';
     }
   };
 
+  // Eventos botão logar
   btnLogin.onclick = () => {
     loginMessage.textContent = '';
     loginMessage.style.color = '#f44';
@@ -297,12 +337,17 @@
     if (logar(username, password)) {
       loginMessage.style.color = '#4f4';
       loginMessage.textContent = 'Logado com sucesso!';
-      mostrarLobby();
+      inputUsername.value = '';
+      inputPassword.value = '';
+      atualizarInventario();
+      atualizarPlayerInfo();
+      mostrarTela(lobbyScreen);
     } else {
       loginMessage.textContent = 'Usuário ou senha incorretos.';
     }
   };
 
+  // Código 2026 libera pistola
   btnSendCode.onclick = () => {
     codeMessage.textContent = '';
     codeMessage.style.color = '#f44';
@@ -315,7 +360,7 @@
         salvarContas();
         atualizarInventario();
         codeMessage.style.color = '#4f4';
-        codeMessage.textContent = 'Código aceito! Pistola adicionada ao inventário.';
+        codeMessage.textContent = 'Código aceito! Pistola adicionada.';
       } else {
         codeMessage.style.color = '#4a4';
         codeMessage.textContent = 'Você já tem a pistola.';
@@ -325,42 +370,25 @@
     }
   };
 
+  // Jogar botão
   btnPlay.onclick = () => {
     if (!contas[userAtivo].equipped) {
       contas[userAtivo].equipped = 'Normal';
       salvarContas();
     }
-    mostrarJogo();
     iniciarJogo();
+    mostrarTela(gameScreen);
   };
 
+  // Voltar ao menu no jogo
   btnVoltar.onclick = () => {
     pararJogo();
-    mostrarLobby();
-  };
-
-  function mostrarLogin() {
-    loginScreen.style.display = 'block';
-    lobbyScreen.style.display = 'none';
-    gameScreen.style.display = 'none';
-  }
-
-  function mostrarLobby() {
-    loginScreen.style.display = 'none';
-    lobbyScreen.style.display = 'block';
-    gameScreen.style.display = 'none';
+    mostrarTela(lobbyScreen);
     atualizarInventario();
     atualizarPlayerInfo();
-  }
+  };
 
-  function mostrarJogo() {
-    loginScreen.style.display = 'none';
-    lobbyScreen.style.display = 'none';
-    gameScreen.style.display = 'flex';
-    weaponLeft.textContent = contas[userAtivo].equipped || 'Normal';
-  }
-
-  // ------ Jogo -------
+  // ==== Jogo ====
 
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
@@ -371,6 +399,7 @@
   let animationFrameId = null;
   let caixaIntervalId = null;
 
+  // Arma player
   const arma = {
     name: null,
     x: 60,
@@ -386,28 +415,7 @@
     playerPointsSpan.textContent = pontos;
   }
 
-  // Criar imagens das armas
-
-  const imagensArmas = {
-    'Normal': new Image(),
-    'Pistola': new Image()
-  };
-
-  function criarImagemNormal() {
-    const canvasImg = document.createElement('canvas');
-    canvasImg.width = 20;
-    canvasImg.height = 20;
-    const ctxImg = canvasImg.getContext('2d');
-    ctxImg.fillStyle = '#666';
-    ctxImg.fillRect(4, 8, 12, 4);
-    ctxImg.fillStyle = '#444';
-    ctxImg.fillRect(8, 6, 4, 2);
-    return canvasImg;
-  }
-
-  imagensArmas['Normal'].src = criarImagemNormal().toDataURL();
-  imagensArmas['Pistola'].src = 'https://i.imgur.com/ciL6yLc.png';
-
+  // Iniciar jogo
   function iniciarJogo() {
     caixas = [];
     tiros = [];
@@ -417,7 +425,9 @@
     arma.name = contas[userAtivo].equipped || 'Normal';
     arma.angle = 0;
     arma.lastFireTime = 0;
-    weaponLeft.textContent = arma.name;
+
+    // Atualiza arma esquerda (imagem)
+    mostrarArmaEsquerda();
 
     if (caixaIntervalId) clearInterval(caixaIntervalId);
     caixaIntervalId = setInterval(() => {
@@ -436,17 +446,32 @@
     animationFrameId = requestAnimationFrame(loopJogo);
   }
 
+  // Mostrar imagem da arma na esquerda
+  function mostrarArmaEsquerda() {
+    weaponLeft.innerHTML = '';
+    let img = armasInfo[arma.name].img;
+    if (img && img.complete) {
+      const imgElem = document.createElement('img');
+      imgElem.src = img.src;
+      weaponLeft.appendChild(imgElem);
+    } else {
+      weaponLeft.textContent = arma.name;
+    }
+  }
+
+  // Parar jogo
   function pararJogo() {
     if (animationFrameId) cancelAnimationFrame(animationFrameId);
     if (caixaIntervalId) clearInterval(caixaIntervalId);
   }
 
+  // Loop principal
   function loopJogo() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Atualizar e desenhar caixas
     for (let i = caixas.length - 1; i >= 0; i--) {
       let box = caixas[i];
-
       if (box.y >= canvas.height / 2 && !box.slowed) {
         box.speedY = 1;
         box.slowed = true;
@@ -477,64 +502,16 @@
       }
     }
 
+    // Desenha arma do player (apontando)
     ctx.save();
     ctx.translate(arma.x, arma.y);
     ctx.rotate(arma.angle);
-
-    const img = imagensArmas[arma.name];
+    let img = armasInfo[arma.name].img;
     if (img && img.complete) {
       const scale = 0.05;
-      ctx.drawImage(img, -img.width/2 * scale, -img.height/2 * scale, img.width * scale, img.height * scale);
+      ctx.drawImage(img, -img.width / 2 * scale, -img.height / 2 * scale, img.width * scale, img.height * scale);
     } else {
       ctx.fillStyle = '#666';
-      ctx.fillRect(-arma.width/2, -arma.height/2, arma.width, arma.height);
+      ctx.fillRect(-arma.width / 2, -arma.height / 2, arma.width, arma.height);
       ctx.fillStyle = '#222';
-      ctx.fillRect(arma.width/2, -5, 30, 10);
-    }
-    ctx.restore();
-
-    for (let i = tiros.length -1; i >= 0; i--) {
-      const t = tiros[i];
-      ctx.beginPath();
-      ctx.arc(t.x, t.y, 5, 0, Math.PI * 2);
-      ctx.fillStyle = 'yellow';
-      ctx.fill();
-
-      t.x += t.vx;
-      t.y += t.vy;
-      t.life--;
-
-      let acertou = false;
-      for (let j = 0; j < caixas.length; j++) {
-        const box = caixas[j];
-        if (t.x > box.x && t.x < box.x + box.width &&
-            t.y > box.y && t.y < box.y + box.height) {
-          const dano = armasInfo[arma.name] ? armasInfo[arma.name].damage : 1;
-          box.vida -= dano;
-          tiros.splice(i,1);
-          acertou = true;
-          break;
-        }
-      }
-
-      if (!acertou && t.life <= 0) {
-        tiros.splice(i,1);
-      }
-    }
-
-    animationFrameId = requestAnimationFrame(loopJogo);
-  }
-
-  canvas.addEventListener('click', (e) => {
-    const now = Date.now();
-    const fireRate = armasInfo[arma.name] ? armasInfo[arma.name].fireRate : 600;
-    if (now - arma.lastFireTime < fireRate) {
-      return;
-    }
-    arma.lastFireTime = now;
-
-    const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
-
-    const
+      ctx.fillRect(arma.width /
