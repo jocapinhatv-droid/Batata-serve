@@ -2,47 +2,53 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>Jogo 2D Completo - Paisagem Mobile</title>
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Jogo 2D Completo Paisagem</title>
 <style>
-  html, body {
-    margin: 0; padding: 0; height: 100%; width: 100%;
-    background: #222; color: #eee;
-    font-family: Arial, sans-serif;
-    overflow: hidden;
+  body, html {
+    margin: 0; padding: 0;
+    height: 100vh;
+    width: 100vw;
     display: flex; justify-content: center; align-items: center;
-  }
-  #wrapper {
-    position: relative;
-    width: 600px;
-    height: 400px;
-    background: #333;
-    border-radius: 15px;
+    background: #222;
     overflow: hidden;
-    box-shadow: 0 0 15px #000;
+    -webkit-user-select: none;
     user-select: none;
-    /* Tela virada pro celular - paisagem */
+  }
+
+  /* Wrapper que gira toda a tela */
+  #wrapper {
+    width: 400px;  /* altura da tela normal vira largura */
+    height: 600px; /* largura da tela normal vira altura */
+    position: relative;
     transform-origin: center center;
     transform: rotate(90deg);
+    overflow: hidden;
+    background: #333;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
   }
+
   .screen {
     display: none;
-    flex-direction: column;
-    height: 100%;
-    width: 100%;
-    box-sizing: border-box;
+    width: 400px;
+    height: 600px;
+    background: #333;
     padding: 15px;
+    box-sizing: border-box;
+    flex-direction: column;
   }
   .screen.active {
     display: flex;
   }
+
   input, button {
     font-size: 16px;
     padding: 8px;
     margin: 5px 0;
     border-radius: 5px;
     border: none;
-    outline: none;
   }
   button {
     background: #555;
@@ -52,59 +58,66 @@
   button:hover {
     background: #666;
   }
+
   #login-message, #code-message {
-    margin-top: 5px; min-height: 20px; font-weight: bold;
+    margin-top: 5px; font-weight: bold; min-height: 20px;
   }
+
   #buttons-row {
     display: flex; justify-content: space-between; margin-top: 10px;
-    flex-wrap: wrap;
   }
   #code-area {
-    width: 180px; display: flex; flex-direction: column;
+    width: 160px; display: flex; flex-direction: column;
   }
+
   #inventory {
-    background: #444; padding: 10px; border-radius: 6px; flex-grow: 1; color: #eee; min-width: 180px;
-    max-height: 150px;
-    overflow-y: auto;
+    background: #444; padding: 10px; border-radius: 6px; width: 220px; height: 100px; overflow-y: auto;
   }
   #inventory button {
-    margin: 5px 3px 5px 0;
-    min-width: 80px;
-    background: #666;
-    color: white;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
+    margin: 5px; min-width: 80px; cursor: pointer;
   }
   #inventory button.selected {
     background-color: #4a4;
   }
+
   #player-info {
-    color: #eee; font-weight: bold; user-select: none;
+    position: absolute; top: 10px; right: 10px; color: #eee; font-weight: bold; user-select: none;
     text-align: right;
-    margin-bottom: 5px;
+    z-index: 10;
   }
+
   #game-screen {
-    position: relative;
-    background: #111;
-    border-radius: 15px;
-    width: 100%;
-    height: 100%;
+    position: relative; flex-direction: row; align-items: center; background: #111;
   }
+
   #weapon-left {
     position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
     width: 80px; height: 80px; background: #222; border-radius: 10px;
     display: flex; justify-content: center; align-items: center;
+    user-select: none;
+    z-index: 10;
   }
   #weapon-left img {
-    max-width: 60px; max-height: 60px;
+    max-width: 60px;
+    max-height: 60px;
     pointer-events: none;
   }
+
+  #game-canvas {
+    margin-left: 100px;
+    background: #222;
+    border-radius: 10px;
+    cursor: crosshair;
+    width: 400px !important;
+    height: 600px !important;
+  }
+
   #score-display {
     position: absolute; top: 10px; right: 10px; color: #fff;
-    font-size: 20px; font-weight: bold;
-    user-select: none;
+    font-size: 20px; font-weight: bold; user-select: none;
+    z-index: 10;
   }
+
   #btn-voltar {
     position: absolute; top: 10px; left: 10px;
     background: #555; padding: 8px 12px; border-radius: 6px;
@@ -114,63 +127,55 @@
   #btn-voltar:hover {
     background: #666;
   }
-  #game-canvas {
-    border-radius: 10px;
-    background: #222;
-    cursor: crosshair;
-    display: block;
-    margin-left: 100px;
-    height: 100%;
-    width: calc(100% - 100px);
-  }
 </style>
 </head>
 <body>
-  <div id="wrapper">
 
-    <!-- LOGIN -->
-    <div id="login-screen" class="screen active">
-      <h2>Login / Criar Conta</h2>
-      <input id="username" type="text" placeholder="Nome de usuário" autocomplete="off" />
-      <input id="password" type="password" placeholder="Senha" autocomplete="off" />
-      <button id="btn-login">Logar</button>
-      <button id="btn-create">Criar Conta</button>
-      <p id="login-message"></p>
-    </div>
+<div id="wrapper">
 
-    <!-- LOBBY -->
-    <div id="lobby-screen" class="screen">
-      <h2>Lobby</h2>
-      <button id="btn-play">Jogar</button>
-      <div id="player-info">
-        Jogador: <span id="player-name"></span><br />
-        Pontos: <span id="player-points">0</span>
-      </div>
-      <div id="buttons-row">
-        <div id="code-area">
-          <input id="code-input" type="text" placeholder="Insira código" autocomplete="off" />
-          <button id="btn-send-code">Enviar Código</button>
-          <p id="code-message"></p>
-        </div>
-        <div id="inventory">
-          <strong>Inventário:</strong><br />
-          <div id="weapon-list"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- JOGO -->
-    <div id="game-screen" class="screen">
-      <button id="btn-voltar">Voltar ao Menu</button>
-      <div id="weapon-left">Nenhuma arma</div>
-      <div id="score-display">Pontos: 0</div>
-      <canvas id="game-canvas" width="600" height="400"></canvas>
-    </div>
-
+  <!-- LOGIN -->
+  <div id="login-screen" class="screen active">
+    <h2>Login / Criar Conta</h2>
+    <input id="username" type="text" placeholder="Nome de usuário" autocomplete="off" />
+    <input id="password" type="password" placeholder="Senha" autocomplete="off" />
+    <button id="btn-login">Logar</button>
+    <button id="btn-create">Criar Conta</button>
+    <p id="login-message"></p>
   </div>
 
+  <!-- LOBBY -->
+  <div id="lobby-screen" class="screen">
+    <h2>Lobby</h2>
+    <button id="btn-play">Jogar</button>
+    <div id="player-info">
+      Jogador: <span id="player-name"></span><br />
+      Pontos: <span id="player-points">0</span>
+    </div>
+    <div id="buttons-row">
+      <div id="code-area">
+        <input id="code-input" type="text" placeholder="Insira código" autocomplete="off" />
+        <button id="btn-send-code">Enviar Código</button>
+        <p id="code-message"></p>
+      </div>
+      <div id="inventory">
+        <strong>Inventário:</strong><br />
+        <div id="weapon-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOGO -->
+  <div id="game-screen" class="screen">
+    <button id="btn-voltar">Voltar ao Menu</button>
+    <div id="weapon-left">Nenhuma arma</div>
+    <div id="score-display">Pontos: 0</div>
+    <canvas id="game-canvas" width="400" height="600"></canvas>
+  </div>
+
+</div>
+
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+(() => {
   const STORAGE_KEY = 'jogo2d_contas';
   let contas = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
   let userAtivo = null;
@@ -197,13 +202,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
 
-  // Info das armas
   const armasInfo = {
-    'Normal': { damage: 1, fireRate: 400, imgSrc: 'https://i.imgur.com/ojS8Ksv.png', scale: 0.05, tirosParaQuebrar: 4, img: null },
-    'Pistola': { damage: 2, fireRate: 300, imgSrc: 'https://i.imgur.com/ciL6yLc.png', scale: 0.03, tirosParaQuebrar: 2, img: null }
+    'Normal': { damage: 1, fireRate: 400, imgSrc: 'https://i.imgur.com/ojS8Ksv.png', scale: 0.03, tirosParaQuebrar: 4, img: null },
+    'Pistola': { damage: 2, fireRate: 300, imgSrc: 'https://i.imgur.com/ciL6yLc.png', scale: 0.025, tirosParaQuebrar: 2, img: null }
   };
 
-  // Carregar imagens das armas
+  // Carregar imagens armas
   function carregarImagens() {
     for (let nome in armasInfo) {
       let img = new Image();
@@ -253,7 +257,6 @@ document.addEventListener('DOMContentLoaded', () => {
         contas[userAtivo].equipped = arma;
         salvarContas();
         atualizarInventario();
-        mostrarArmaEsquerda();
       };
       weaponListDiv.appendChild(btn);
     });
@@ -301,8 +304,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function atualizarPontos() {
     scoreDisplay.textContent = 'Pontos: ' + pontos;
     playerPointsSpan.textContent = pontos;
-    contas[userAtivo].points = pontos;
-    salvarContas();
   }
 
   function iniciarJogo() {
@@ -314,6 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
     arma.name = contas[userAtivo].equipped || 'Normal';
     arma.angle = 0;
     arma.lastFire = 0;
+    arma.x = 60;
+    arma.y = canvas.height / 2;
 
     mostrarArmaEsquerda();
 
@@ -376,7 +379,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       box.y += box.speedY;
 
-      // Vida da caixa representada pela cor (vermelho pra quebrado)
       let vidaMax = armasInfo['Normal'].tirosParaQuebrar;
       let vidaRatio = box.vida / vidaMax;
       if (vidaRatio < 0) vidaRatio = 0;
@@ -389,6 +391,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (box.vida <= 0) {
         caixas.splice(i, 1);
         pontos++;
+        contas[userAtivo].points = pontos;
+        salvarContas();
         atualizarPontos();
         atualizarPlayerInfo();
         continue;
@@ -450,7 +454,6 @@ document.addEventListener('DOMContentLoaded', () => {
     animId = requestAnimationFrame(loopJogo);
   }
 
-  // Eventos dos botões
   btnCreate.onclick = () => {
     loginMessage.textContent = '';
     loginMessage.style.color = '#f44';
@@ -491,4 +494,26 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   btnSendCode.onclick = () => {
-    codeMessage
+    codeMessage.textContent = '';
+    codeMessage.style.color = '#f44';
+    const code = inputCode.value.trim();
+    if (code === '2026') {
+      const inv = contas[userAtivo].inventory;
+      if (!inv.includes('Pistola')) {
+        inv.push('Pistola');
+        contas[userAtivo].equipped = 'Pistola';
+        salvarContas();
+        atualizarInventario();
+        codeMessage.style.color = '#4f4';
+        codeMessage.textContent = 'Código aceito! Pistola adicionada.';
+      } else {
+        codeMessage.style.color = '#4a4';
+        codeMessage.textContent = 'Você já tem a pistola.';
+      }
+    } else {
+      codeMessage.textContent = 'Código incorreto.';
+    }
+  };
+
+  btnPlay.onclick = () => {
+    if (!
