@@ -12,8 +12,7 @@
   }
   .screen {
     width: 600px; height: 400px; background: #333; padding: 15px; box-sizing: border-box;
-    display: none; position: relative;
-    flex-direction: column;
+    display: none; position: relative; flex-direction: column;
   }
   .screen.active { display: flex; }
   input, button {
@@ -125,12 +124,10 @@
 
 <script>
 (() => {
-  // Storage
   const STORAGE_KEY = 'jogo2d_contas';
   let contas = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
   let userAtivo = null;
 
-  // Elementos
   const loginScreen = document.getElementById('login-screen');
   const lobbyScreen = document.getElementById('lobby-screen');
   const gameScreen = document.getElementById('game-screen');
@@ -152,10 +149,9 @@
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
 
-  // Armas info (dano, fireRate ms, imagem, escala)
   const armasInfo = {
-    'Normal': { damage: 1, fireRate: 400, img: null, imgSrc: 'https://i.imgur.com/ojS8Ksv.png', scale: 0.05, tirosParaQuebrar: 4 },
-    'Pistola': { damage: 2, fireRate: 300, img: null, imgSrc: 'https://i.imgur.com/ciL6yLc.png', scale: 0.03, tirosParaQuebrar: 2 }
+    'Normal': { damage: 1, fireRate: 400, imgSrc: 'https://i.imgur.com/ojS8Ksv.png', scale: 0.05, tirosParaQuebrar: 4, img: null },
+    'Pistola': { damage: 2, fireRate: 300, imgSrc: 'https://i.imgur.com/ciL6yLc.png', scale: 0.03, tirosParaQuebrar: 2, img: null }
   };
 
   // Carregar imagens armas
@@ -168,12 +164,10 @@
   }
   carregarImagens();
 
-  // Salvar contas no localStorage
   function salvarContas() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(contas));
   }
 
-  // Criar conta retorna true se ok
   function criarConta(user, pass) {
     if (contas[user]) return false;
     contas[user] = {
@@ -186,7 +180,6 @@
     return true;
   }
 
-  // Logar retorna true se ok
   function logar(user, pass) {
     if (contas[user] && contas[user].password === pass) {
       userAtivo = user;
@@ -195,7 +188,6 @@
     return false;
   }
 
-  // Atualizar inventário no lobby
   function atualizarInventario() {
     const inv = contas[userAtivo].inventory;
     const equipado = contas[userAtivo].equipped || 'Normal';
@@ -217,20 +209,196 @@
     });
   }
 
-  // Atualizar nome e pontos
   function atualizarPlayerInfo() {
     playerNameSpan.textContent = userAtivo;
     playerPointsSpan.textContent = contas[userAtivo].points;
   }
 
-  // Mostrar uma tela
   function mostrarTela(tela) {
     [loginScreen, lobbyScreen, gameScreen].forEach(s => s.classList.remove('active'));
     tela.classList.add('active');
   }
 
-  // Início tela login
-  mostrarTela(loginScreen);
+  // Variáveis do jogo
+  let caixas = [];
+  let tiros = [];
+  let pontos = 0;
+  let animId = null;
+  let caixaTimer = null;
+
+  const arma = {
+    name: null,
+    x: 60,
+    y: canvas.height / 2,
+    angle: 0,
+    lastFire: 0
+  };
+
+  function mostrarArmaEsquerda() {
+    weaponLeft.innerHTML = '';
+    const img = armasInfo[arma.name].img;
+    if (img && img.complete) {
+      const i = document.createElement('img');
+      i.src = img.src;
+      i.style.maxWidth = '60px';
+      i.style.maxHeight = '60px';
+      weaponLeft.appendChild(i);
+    } else {
+      weaponLeft.textContent = arma.name;
+    }
+  }
+
+  function atualizarPontos() {
+    scoreDisplay.textContent = 'Pontos: ' + pontos;
+    playerPointsSpan.textContent = pontos;
+  }
+
+  function iniciarJogo() {
+    caixas = [];
+    tiros = [];
+    pontos = contas[userAtivo].points || 0;
+    atualizarPontos();
+
+    arma.name = contas[userAtivo].equipped || 'Normal';
+    arma.angle = 0;
+    arma.lastFire = 0;
+
+    mostrarArmaEsquerda();
+
+    if (caixaTimer) clearInterval(caixaTimer);
+    caixaTimer = setInterval(() => {
+      caixas.push({
+        x: canvas.width - 40,
+        y: 0,
+        width: 40,
+        height: 40,
+        speedY: 3,
+        slowed: false,
+        vida: armasInfo['Normal'].tirosParaQuebrar
+      });
+    }, 2000);
+
+    if (animId) cancelAnimationFrame(animId);
+    animId = requestAnimationFrame(loopJogo);
+  }
+
+  function pararJogo() {
+    if (animId) cancelAnimationFrame(animId);
+    if (caixaTimer) clearInterval(caixaTimer);
+  }
+
+  canvas.addEventListener('click', e => {
+    if (!arma.name) return;
+    const rect = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    const dx = clickX - arma.x;
+    const dy = clickY - arma.y;
+    arma.angle = Math.atan2(dy, dx);
+
+    const now = Date.now();
+    if (now - arma.lastFire >= armasInfo[arma.name].fireRate) {
+      arma.lastFire = now;
+      tiros.push({
+        x: arma.x,
+        y: arma.y,
+        angle: arma.angle,
+        speed: 10,
+        width: 8,
+        height: 4,
+        damage: armasInfo[arma.name].damage
+      });
+    }
+  });
+
+  function loopJogo() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Atualiza caixas
+    for (let i = caixas.length - 1; i >= 0; i--) {
+      const box = caixas[i];
+      if (!box.slowed && box.y >= canvas.height / 2) {
+        box.speedY = 1;
+        box.slowed = true;
+      }
+      box.y += box.speedY;
+
+      let vidaMax = armasInfo['Normal'].tirosParaQuebrar;
+      let vidaRatio = box.vida / vidaMax;
+      if (vidaRatio < 0) vidaRatio = 0;
+      const r = Math.floor(187 * vidaRatio + 68 * (1 - vidaRatio));
+      const g = Math.floor(68 * vidaRatio + 68 * (1 - vidaRatio));
+      const b = Math.floor(68 * vidaRatio + 68 * (1 - vidaRatio));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(box.x, box.y, box.width, box.height);
+
+      if (box.vida <= 0) {
+        caixas.splice(i, 1);
+        pontos++;
+        contas[userAtivo].points = pontos;
+        salvarContas();
+        atualizarPontos();
+        atualizarPlayerInfo();
+        continue;
+      }
+
+      if (box.y > canvas.height) {
+        caixas.splice(i, 1);
+      }
+    }
+
+    // Atualiza tiros
+    for (let i = tiros.length - 1; i >= 0; i--) {
+      const tiro = tiros[i];
+      tiro.x += Math.cos(tiro.angle) * tiro.speed;
+      tiro.y += Math.sin(tiro.angle) * tiro.speed;
+
+      ctx.save();
+      ctx.translate(tiro.x, tiro.y);
+      ctx.rotate(tiro.angle);
+      ctx.fillStyle = 'yellow';
+      ctx.fillRect(0, -tiro.height / 2, tiro.width, tiro.height);
+      ctx.restore();
+
+      let colidiu = false;
+      for (let j = caixas.length - 1; j >= 0; j--) {
+        const box = caixas[j];
+        if (
+          tiro.x > box.x &&
+          tiro.x < box.x + box.width &&
+          tiro.y > box.y &&
+          tiro.y < box.y + box.height
+        ) {
+          box.vida -= tiro.damage;
+          tiros.splice(i, 1);
+          colidiu = true;
+          break;
+        }
+      }
+      if (colidiu) continue;
+
+      if (tiro.x < 0 || tiro.x > canvas.width || tiro.y < 0 || tiro.y > canvas.height) {
+        tiros.splice(i, 1);
+      }
+    }
+
+    // Desenha arma na posição e ângulo
+    const imgArma = armasInfo[arma.name].img;
+    if (imgArma && imgArma.complete) {
+      ctx.save();
+      ctx.translate(arma.x, arma.y);
+      ctx.rotate(arma.angle);
+      const scale = armasInfo[arma.name].scale;
+      const w = imgArma.width * scale;
+      const h = imgArma.height * scale;
+      ctx.drawImage(imgArma, -w / 2, -h / 2, w, h);
+      ctx.restore();
+    }
+
+    // Próximo frame
+    animId = requestAnimationFrame(loopJogo);
+  }
 
   btnCreate.onclick = () => {
     loginMessage.textContent = '';
@@ -293,176 +461,24 @@
     }
   };
 
-  // Variáveis do jogo
-  let caixas = [];
-  let tiros = [];
-  let pontos = 0;
-  let animId = null;
-  let caixaTimer = null;
-
-  // Arma do player
-  const arma = {
-    name: null,
-    x: 60,
-    y: canvas.height / 2,
-    angle: 0,
-    lastFire: 0
+  btnPlay.onclick = () => {
+    if (!contas[userAtivo].equipped) {
+      contas[userAtivo].equipped = 'Normal';
+      salvarContas();
+    }
+    iniciarJogo();
+    mostrarTela(gameScreen);
   };
 
-  // Mostrar arma esquerda no jogo
-  function mostrarArmaEsquerda() {
-    weaponLeft.innerHTML = '';
-    const img = armasInfo[arma.name].img;
-    if (img && img.complete) {
-      const i = document.createElement('img');
-      i.src = img.src;
-      i.style.maxWidth = '60px';
-      i.style.maxHeight = '60px';
-      weaponLeft.appendChild(i);
-    } else {
-      weaponLeft.textContent = arma.name;
-    }
-  }
+  btnVoltar.onclick = () => {
+    pararJogo();
+    mostrarTela(lobbyScreen);
+    atualizarInventario();
+    atualizarPlayerInfo();
+  };
 
-  // Atualizar pontos no jogo e lobby
-  function atualizarPontos() {
-    scoreDisplay.textContent = 'Pontos: ' + pontos;
-    playerPointsSpan.textContent = pontos;
-  }
+})();
+</script>
 
-  // Iniciar jogo
-  function iniciarJogo() {
-    caixas = [];
-    tiros = [];
-    pontos = contas[userAtivo].points || 0;
-    atualizarPontos();
-
-    arma.name = contas[userAtivo].equipped || 'Normal';
-    arma.angle = 0;
-    arma.lastFire = 0;
-
-    mostrarArmaEsquerda();
-
-    if (caixaTimer) clearInterval(caixaTimer);
-    caixaTimer = setInterval(() => {
-      caixas.push({
-        x: canvas.width - 40,
-        y: 0,
-        width: 40,
-        height: 40,
-        speedY: 3,
-        slowed: false,
-        vida: armasInfo['Normal'].tirosParaQuebrar // padrão 4 tiros
-      });
-    }, 2000);
-
-    if (animId) cancelAnimationFrame(animId);
-    animId = requestAnimationFrame(loopJogo);
-  }
-
-  // Parar jogo
-  function pararJogo() {
-    if (animId) cancelAnimationFrame(animId);
-    if (caixaTimer) clearInterval(caixaTimer);
-  }
-
-  // Clique no canvas: mira e atira
-  canvas.addEventListener('click', e => {
-    if (!arma.name) return;
-    const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
-
-    // Atualiza ângulo arma
-    const dx = clickX - arma.x;
-    const dy = clickY - arma.y;
-    arma.angle = Math.atan2(dy, dx);
-
-    // Checa fireRate
-    const now = Date.now();
-    if (now - arma.lastFire >= armasInfo[arma.name].fireRate) {
-      arma.lastFire = now;
-      tiros.push({
-        x: arma.x,
-        y: arma.y,
-        angle: arma.angle,
-        speed: 10,
-        width: 8,
-        height: 4,
-        damage: armasInfo[arma.name].damage
-      });
-    }
-  });
-
-  // Loop do jogo
-  function loopJogo() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Atualiza caixas
-    for (let i = caixas.length - 1; i >= 0; i--) {
-      const box = caixas[i];
-
-      // Desacelera quando passar metade da tela
-      if (!box.slowed && box.y >= canvas.height / 2) {
-        box.speedY = 1;
-        box.slowed = true;
-      }
-
-      box.y += box.speedY;
-
-      // Cor da caixa conforme vida
-      let vidaMax = armasInfo['Normal'].tirosParaQuebrar;
-      let vidaRatio = box.vida / vidaMax;
-      if (vidaRatio < 0) vidaRatio = 0;
-      const r = Math.floor(187 * vidaRatio + 68 * (1 - vidaRatio));
-      const g = Math.floor(68 * vidaRatio + 68 * (1 - vidaRatio));
-      const b = Math.floor(68 * vidaRatio + 68 * (1 - vidaRatio));
-      ctx.fillStyle = `rgb(${r},${g},${b})`;
-      ctx.fillRect(box.x, box.y, box.width, box.height);
-
-      // Remove caixa se vida <= 0 e soma pontos
-      if (box.vida <= 0) {
-        caixas.splice(i, 1);
-        pontos++;
-        contas[userAtivo].points = pontos;
-        salvarContas();
-        atualizarPontos();
-        atualizarPlayerInfo();
-        continue;
-      }
-
-      // Remove caixa se passou do chão
-      if (box.y > canvas.height) {
-        caixas.splice(i, 1);
-      }
-    }
-
-    // Atualiza tiros
-    for (let i = tiros.length - 1; i >= 0; i--) {
-      const tiro = tiros[i];
-      tiro.x += Math.cos(tiro.angle) * tiro.speed;
-      tiro.y += Math.sin(tiro.angle) * tiro.speed;
-
-      // Desenha tiro
-      ctx.save();
-      ctx.translate(tiro.x, tiro.y);
-      ctx.rotate(tiro.angle);
-      ctx.fillStyle = 'yellow';
-      ctx.fillRect(0, -tiro.height / 2, tiro.width, tiro.height);
-      ctx.restore();
-
-      // Colisão tiro-caixa
-      let colidiu = false;
-      for (let j = caixas.length -1; j >= 0; j--) {
-        const box = caixas[j];
-        if (tiro.x > box.x && tiro.x < box.x + box.width &&
-            tiro.y > box.y && tiro.y < box.y + box.height) {
-          box.vida -= tiro.damage;
-          tiros.splice(i, 1);
-          colidiu = true;
-          break;
-        }
-      }
-      if (colidiu) continue;
-
-      // Remove tiro fora da tela
+</body>
+</html>
