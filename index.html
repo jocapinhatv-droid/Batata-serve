@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Jogo 2D - Lobby</title>
+<style>
+  body, html {
+    margin: 0; padding: 0; font-family: Arial, sans-serif; background: #222; color: #eee;
+    height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  #login-screen, #lobby-screen, #game-screen {
+    width: 100%; max-width: 600px; background: #333; padding: 20px; border-radius: 8px; display: none;
+  }
+  input, button {
+    padding: 8px; margin: 5px 0; width: 100%; border-radius: 4px; border: none;
+    font-size: 16px;
+  }
+  button {
+    background: #555; color: #eee; cursor: pointer;
+  }
+  button:hover {
+    background: #666;
+  }
+  #lobby-screen {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  #buttons-row {
+    display: flex; justify-content: space-between; gap: 10px;
+  }
+  #code-area {
+    display: flex; flex-direction: column; width: 150px;
+  }
+  #inventory {
+    margin-top: 10px; background: #444; padding: 10px; border-radius: 5px;
+  }
+  #inventory button {
+    width: auto; margin-right: 10px;
+  }
+  #game-screen {
+    position: relative; height: 400px; background: #111; overflow: hidden;
+    display: flex;
+    align-items: center;
+  }
+  #weapon-left {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    width: 80px; height: 80px; background: #666; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: bold; user-select: none;
+  }
+  #game-canvas {
+    flex-grow: 1; margin-left: 100px; background: #222; border-radius: 10px;
+    cursor: crosshair;
+  }
+  #score-display {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: #fff;
+    font-size: 20px;
+    font-weight: bold;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- Login e criar conta -->
+<div id="login-screen">
+  <h2>Login / Criar Conta</h2>
+  <input type="text" id="username" placeholder="Nome de usuário" />
+  <input type="password" id="password" placeholder="Senha" />
+  <button id="btn-login">Logar</button>
+  <button id="btn-create">Criar Conta</button>
+  <p id="login-message" style="color: #f44;"></p>
+</div>
+
+<!-- Lobby -->
+<div id="lobby-screen">
+  <h2>Lobby</h2>
+  <button id="btn-play">Jogar</button>
+
+  <div id="buttons-row">
+    <div id="code-area">
+      <input type="text" id="code-input" placeholder="Insira código" />
+      <button id="btn-send-code">Enviar Código</button>
+      <p id="code-message" style="color: #4f4;"></p>
+    </div>
+
+    <div id="settings-area">
+      <h3>Configurações</h3>
+      <div id="inventory">
+        <strong>Inventário:</strong><br />
+        <div id="weapon-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tela de jogo -->
+<div id="game-screen">
+  <div id="weapon-left">Nenhuma arma</div>
+  <div id="score-display">Pontos: 0</div>
+  <canvas id="game-canvas" width="450" height="400"></canvas>
+</div>
+
+<script>
+  const STORAGE_KEY = 'jogo2d_contas';
+
+  let contas = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+  let userAtivo = null;
+
+  const loginScreen = document.getElementById('login-screen');
+  const lobbyScreen = document.getElementById('lobby-screen');
+  const gameScreen = document.getElementById('game-screen');
+  const loginMessage = document.getElementById('login-message');
+  const codeMessage = document.getElementById('code-message');
+  const weaponLeft = document.getElementById('weapon-left');
+  const weaponListDiv = document.getElementById('weapon-list');
+  const scoreDisplay = document.getElementById('score-display');
+
+  const btnLogin = document.getElementById('btn-login');
+  const btnCreate = document.getElementById('btn-create');
+  const btnPlay = document.getElementById('btn-play');
+  const btnSendCode = document.getElementById('btn-send-code');
+  const inputUsername = document.getElementById('username');
+  const inputPassword = document.getElementById('password');
+  const inputCode = document.getElementById('code-input');
+
+  // Armas com propriedades: dano e delay entre tiros (ms)
+  const armasInfo = {
+    'Normal': { damage: 1, fireRate: 600 }, // precisa 4 tiros
+    'Pistola': { damage: 2, fireRate: 300 } // precisa 2 tiros
+  };
+
+  function salvarContas() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(contas));
+  }
+
+  function criarConta(username, password) {
+    if (contas[username]) {
+      return false;
+    }
+    contas[username] = {
+      password,
+      inventory: ['Normal'], // Começa com arma normal
+      equipped: 'Normal'
+    };
+    salvarContas();
+    return true;
+  }
+
+  function logar(username, password) {
+    if (contas[username] && contas[username].password === password) {
+      userAtivo = username;
+      return true;
+    }
+    return false;
+  }
+
+  function atualizarInventario() {
+    const inventario = contas[userAtivo].inventory;
+    const equipado = contas[userAtivo].equipped || 'Normal';
+
+    // Garante arma normal se nada equipado
+    if (!equipado) {
+      contas[userAtivo].equipped = 'Normal';
+      salvarContas();
+    }
+
+    weaponListDiv.innerHTML = '';
+
+    if (inventario.length === 0) {
+      weaponListDiv.innerHTML = '<em>Nenhuma arma</em>';
+      return;
+    }
+
+    inventario.forEach(arma => {
+      const btn = document.createElement('button');
+      btn.textContent = arma;
+      if (arma === equipado) btn.style.backgroundColor = '#4a4';
+      btn.onclick = () => {
+        contas[userAtivo].equipped = arma;
+        salvarContas();
+        atualizarInventario();
+      };
+      weaponListDiv.appendChild(btn);
+    });
+  }
+
+  btnCreate.onclick = () => {
+    loginMessage.textContent = '';
+    const username = inputUsername.value.trim();
+    const password = inputPassword.value;
+    if (!username || !password) {
+      loginMessage.textContent = 'Preencha nome e senha.';
+      return;
+    }
+    if (criarConta(username, password)) {
+      loginMessage.style.color = '#4f4';
+      loginMessage.textContent = 'Conta criada com sucesso! Faça login.';
+    } else {
+      loginMessage.style.color = '#f44';
+      loginMessage.textContent = 'Nome indisponível.';
+    }
+  };
+
+  btnLogin.onclick = () => {
+    loginMessage.textContent = '';
+    const username = inputUsername.value.trim();
+    const password = inputPassword.value;
+    if (!username || !password) {
+      loginMessage.textContent = 'Preencha nome e senha.';
+      return;
+    }
+    if (logar(username, password)) {
+      loginMessage.style.color = '#4f4';
+      loginMessage.textContent = 'Logado com sucesso!';
+      mostrarLobby();
+    } else {
+      loginMessage.style.color = '#f44';
+      loginMessage.textContent = 'Usuário ou senha incorretos.';
+    }
+  };
+
+  btnSendCode.onclick = () => {
+    codeMessage.textContent = '';
+    const code = inputCode.value.trim();
+    if (code === '2026') {
+      const inventario = contas[userAtivo].inventory;
+      if (!inventario.includes('Pistola')) {
+        inventario.push('Pistola');
+        contas[userAtivo].equipped = 'Pistola';
+        salvarContas();
+        atualizarInventario();
+        codeMessage.style.color = '#4f4';
+        codeMessage.textContent = 'Código aceito! Pistola adicionada ao inventário.';
+      } else {
+        codeMessage.style.color = '#4a4';
+        codeMessage.textContent = 'Você já tem a pistola.';
+      }
+    } else {
+      codeMessage.style.color = '#f44';
+      codeMessage.textContent = 'Código incorreto.';
+    }
+  };
+
+  btnPlay.onclick = () => {
+    // Garante arma equipada (normal se nada)
+    if (!contas[userAtivo].equipped) {
+      contas[userAtivo].equipped = 'Normal';
+      salvarContas();
+    }
+    mostrarJogo();
+    iniciarJogo();
+  };
+
+  function mostrarLogin() {
+    loginScreen.style.display = 'block';
+    lobbyScreen.style.display = 'none';
+    gameScreen.style.display = 'none';
+  }
+
+  function mostrarLobby() {
+    loginScreen.style.display = 'none';
+    lobbyScreen.style.display = 'block';
+    gameScreen.style.display = 'none';
+    atualizarInventario();
+  }
+
+  function mostrarJogo() {
+    loginScreen.style.display = 'none';
+    lobbyScreen.style.display = 'none';
+    gameScreen.style.display = 'flex';
+    weaponLeft.textContent = contas[userAtivo].equipped || 'Normal';
+  }
+
+  // ------ Jogo -------
+
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+
+  let caixas = [];
+  let arma = {
+    name: null,
+    x: 60,
+    y: canvas.height / 2,
+    width: 50,
+    height: 50,
+    angle: 0,
+    lastFireTime: 0
+  };
+
+  let tiros = [];
+  let pontos = 0;
+
+  function atualizarPontos() {
+    scoreDisplay.textContent = 'Pontos: ' + pontos;
+  }
+
+  function iniciarJogo() {
+    caixas = [];
+    tiros = [];
+    pontos = 0;
+    atualizarPontos();
+
+    // Pega arma equipada, ou Normal se não tiver
+    arma.name = contas[userAtivo].equipped || 'Normal';
+    arma.angle = 0;
+    arma.lastFireTime = 0;
+    weaponLeft.textContent = arma.name;
+
+    if (window.caixaInterval) clearInterval(window.caixaInterval);
+    window.caixaInterval = setInterval(() => {
+      caixas.push({
+        x: canvas.width - 40,
+        y: 0,
+        width: 40,
+        height: 40,
+        speedY: 3,
+        slowed: false,
+        vida: 4 // vida padrão 4 tiros pra normal
+      });
+    }, 2000);
+
+    requestAnimationFrame(loopJogo);
+  }
+
+  function loopJogo() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Atualizar caixas
+    for (let i = caixas.length - 1; i >= 0; i--) {
+      let box = caixas[i];
+
+      if (box.y >= canvas.height / 2 && !box.slowed) {
+        box.speedY = 1;
+        box.slowed = true;
+      }
+      box.y += box.speedY;
+
+      // Desenhar caixas com cor proporcional à vida
+      let vidaRatio = box.vida / 4;
+      if (vidaRatio < 0) vidaRatio = 0;
+      let r = Math.floor(187 * vidaRatio + 68 * (1 - vidaRatio));
+      let g = Math.floor(68 * vidaRatio + 68 * (1 - vidaRatio));
+      let b = Math.floor(68 * vidaRatio + 68 * (1 - vidaRatio));
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+
+      ctx.fillRect(box.x, box.y, box.width, box.height);
+
+      // Se a vida da caixa acabar, remove e soma ponto
+      if (box.vida <= 0) {
+        caixas.splice(i, 1);
+        pontos++;
+        atualizarPontos();
+        continue;
+      }
+
+      // Remove se a caixa cair fora da tela (sem ponto)
+      if (box.y > canvas.height - box.height) {
+        caixas.splice(i, 1);
+      }
+    }
+
+    // Desenhar arma parada
+    ctx.save();
+    ctx.translate(arma.x, arma.y);
+    ctx.rotate(arma.angle);
+    ctx.fillStyle = '#666';
+    ctx.fillRect(-arma.width/2, -arma.height/2, arma.width, arma.height);
+    ctx.fillStyle = '#222';
+    ctx.fillRect(arma.width/2, -5, 30, 10);
+    ctx.restore();
+
+    // Atualizar e desenhar tiros
+    for (let i = tiros.length -1; i >= 0; i--) {
+      const t = tiros[i];
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = 'yellow';
+      ctx.fill();
+
+      t.x += t.vx;
+      t.y += t.vy;
+      t.life--;
+
+      // Checar colisão com caixas
+      let acertou = false;
+      for (let j = 0; j < caixas.length; j++) {
+        const box = caixas[j];
+        if (t.x > box.x && t.x < box.x + box.width &&
+            t.y > box.y && t.y < box.y + box.height) {
+          const dano = armasInfo[arma.name] ? armasInfo[arma.name].damage : 1;
+          box.vida -= dano;
+          tiros.splice(i,1);
+          acertou = true;
+          break;
+        }
+      }
+
+      if (!acertou && t.life <= 0) {
+        tiros.splice(i,1);
+      }
+    }
+
+    requestAnimationFrame(loopJogo);
+  }
+
+  canvas.addEventListener('click', (e) => {
+    const now = Date.now();
+    const fireRate = armasInfo[arma.name] ? armasInfo[arma.name].fireRate : 600;
+    if (now - arma.lastFireTime < fireRate) {
+      return; // não atira antes do cooldown
+    }
+    arma.lastFireTime = now;
+
+    const rect = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    const dx = clickX - arma.x;
+    const dy = clickY - arma.y;
+    arma.angle = Math.atan2(dy, dx);
+
+    const speed = 10;
+    const vx = Math.cos(arma.angle) * speed;
+    const vy = Math.sin(arma.angle) * speed;
+
+    tiros.push({
+      x: arma.x + vx * 2,
+      y: arma.y + vy * 2,
+      vx,
+      vy,
+      life: 60
+    });
+  });
+
+  mostrarLogin();
+</script>
+
+</body>
+</html>
