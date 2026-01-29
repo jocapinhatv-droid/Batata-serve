@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Jogo 2D - Lobby</title>
+<title>Jogo 2D - Lobby com Armas Imagens</title>
 <style>
   body, html {
     margin: 0; padding: 0; font-family: Arial, sans-serif; background: #222; color: #eee;
@@ -44,7 +44,7 @@
   }
   #weapon-left {
     position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-    width: 80px; height: 80px; background: #666; border-radius: 10px;
+    width: 80px; height: 80px; background: #222; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
     color: white; font-weight: bold; user-select: none;
   }
@@ -160,10 +160,11 @@
 
   function atualizarInventario() {
     const inventario = contas[userAtivo].inventory;
-    const equipado = contas[userAtivo].equipped || 'Normal';
+    let equipado = contas[userAtivo].equipped;
 
     // Garante arma normal se nada equipado
-    if (!equipado) {
+    if (!equipado || !inventario.includes(equipado)) {
+      equipado = 'Normal';
       contas[userAtivo].equipped = 'Normal';
       salvarContas();
     }
@@ -281,7 +282,11 @@
   const ctx = canvas.getContext('2d');
 
   let caixas = [];
-  let arma = {
+  let tiros = [];
+  let pontos = 0;
+
+  // Pos e tamanho da arma no canvas
+  const arma = {
     name: null,
     x: 60,
     y: canvas.height / 2,
@@ -291,12 +296,32 @@
     lastFireTime: 0
   };
 
-  let tiros = [];
-  let pontos = 0;
-
   function atualizarPontos() {
     scoreDisplay.textContent = 'Pontos: ' + pontos;
   }
+
+  // Criar imagens das armas
+
+  const imagensArmas = {
+    'Normal': new Image(),
+    'Pistola': new Image()
+  };
+
+  // Cria uma imagem simples para arma normal
+  function criarImagemNormal() {
+    const canvasImg = document.createElement('canvas');
+    canvasImg.width = 50;
+    canvasImg.height = 50;
+    const ctxImg = canvasImg.getContext('2d');
+    ctxImg.fillStyle = '#666';
+    ctxImg.fillRect(10, 20, 30, 10);
+    ctxImg.fillStyle = '#444';
+    ctxImg.fillRect(20, 15, 10, 5);
+    return canvasImg;
+  }
+
+  imagensArmas['Normal'].src = criarImagemNormal().toDataURL();
+  imagensArmas['Pistola'].src = 'https://i.imgur.com/ciL6yLc.png';
 
   function iniciarJogo() {
     caixas = [];
@@ -304,7 +329,6 @@
     pontos = 0;
     atualizarPontos();
 
-    // Pega arma equipada, ou Normal se não tiver
     arma.name = contas[userAtivo].equipped || 'Normal';
     arma.angle = 0;
     arma.lastFireTime = 0;
@@ -363,14 +387,22 @@
       }
     }
 
-    // Desenhar arma parada
+    // Desenhar arma parada com imagem
     ctx.save();
     ctx.translate(arma.x, arma.y);
     ctx.rotate(arma.angle);
-    ctx.fillStyle = '#666';
-    ctx.fillRect(-arma.width/2, -arma.height/2, arma.width, arma.height);
-    ctx.fillStyle = '#222';
-    ctx.fillRect(arma.width/2, -5, 30, 10);
+
+    const img = imagensArmas[arma.name];
+    if (img && img.complete) {
+      const scale = 1;
+      ctx.drawImage(img, -img.width/2 * scale, -img.height/2 * scale, img.width * scale, img.height * scale);
+    } else {
+      // fallback: retângulo simples se a imagem não carregar
+      ctx.fillStyle = '#666';
+      ctx.fillRect(-arma.width/2, -arma.height/2, arma.width, arma.height);
+      ctx.fillStyle = '#222';
+      ctx.fillRect(arma.width/2, -5, 30, 10);
+    }
     ctx.restore();
 
     // Atualizar e desenhar tiros
