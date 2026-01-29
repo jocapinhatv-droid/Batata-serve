@@ -253,6 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
         contas[userAtivo].equipped = arma;
         salvarContas();
         atualizarInventario();
+        mostrarArmaEsquerda();
       };
       weaponListDiv.appendChild(btn);
     });
@@ -375,6 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       box.y += box.speedY;
 
+      // Vida da caixa representada pela cor (vermelho pra quebrado)
       let vidaMax = armasInfo['Normal'].tirosParaQuebrar;
       let vidaRatio = box.vida / vidaMax;
       if (vidaRatio < 0) vidaRatio = 0;
@@ -448,6 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
     animId = requestAnimationFrame(loopJogo);
   }
 
+  // Eventos dos botões
   btnCreate.onclick = () => {
     loginMessage.textContent = '';
     loginMessage.style.color = '#f44';
@@ -488,18 +491,4 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   btnSendCode.onclick = () => {
-    codeMessage.textContent = '';
-    codeMessage.style.color = '#f44';
-    const code = inputCode.value.trim();
-    if (code === '2026') {
-      const inv = contas[userAtivo].inventory;
-      if (!inv.includes('Pistola')) {
-        inv.push('Pistola');
-        contas[userAtivo].equipped = 'Pistola';
-        salvarContas();
-        atualizarInventario();
-        codeMessage.style.color = '#4f4';
-        codeMessage.textContent = 'Código aceito! Pistola adicionada.';
-      } else {
-        codeMessage.style.color = '#4a4';
-        codeMessage.textContent = 'Você já tem a
+    codeMessage
