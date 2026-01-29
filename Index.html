@@ -394,7 +394,7 @@
 
     const img = imagensArmas[arma.name];
     if (img && img.complete) {
-      const scale = 1;
+      const scale = 0.5;
       ctx.drawImage(img, -img.width/2 * scale, -img.height/2 * scale, img.width * scale, img.height * scale);
     } else {
       // fallback: retângulo simples se a imagem não carregar
