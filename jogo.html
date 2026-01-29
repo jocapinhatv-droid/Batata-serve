@@ -19,6 +19,7 @@
     padding: 15px;
     box-sizing: border-box;
     flex-direction: column;
+    position: relative;
   }
   .screen.active {
     display: flex;
@@ -62,15 +63,15 @@
   }
   #game-screen {
     position: relative;
-    flex-direction: row;
-    align-items: center;
+    display: flex;
     background: #111;
-    width: 600px;  /* mais largo para o jogo */
-    height: 640px;
+    height: 370px; /* Ajustado menor que antes */
+    width: 720px; /* Mantém largura maior */
+    border-radius: 10px;
   }
   #weapon-left {
-    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-    width: 80px; height: 80px; background: #222; border-radius: 10px;
+    width: 80px; height: 350px;
+    background: #222; border-radius: 10px 0 0 10px;
     display: flex; justify-content: center; align-items: center;
     user-select: none;
   }
@@ -78,29 +79,31 @@
     max-width: 60px; max-height: 60px; pointer-events: none;
   }
   #game-canvas {
-    margin-left: 100px;
     background: #222;
-    border-radius: 10px;
     cursor: crosshair;
-    width: 500px;  /* largura aumentada */
-    height: 600px; /* altura maior */
+    width: 600px;
+    height: 350px; /* Altura menor */
+    display: block;
+  }
+  #right-blocker {
+    width: 40px;
+    background: #0055ff;
+    border-radius: 0 10px 10px 0;
+    user-select: none;
   }
   #score-display {
     position: absolute; top: 10px; right: 10px; color: #fff;
     font-size: 20px; font-weight: bold; user-select: none;
+    z-index: 10;
   }
   #btn-voltar {
     position: absolute; top: 10px; left: 10px;
     background: #555; padding: 8px 12px; border-radius: 6px;
     border: none; color: white; cursor: pointer;
+    z-index: 10;
   }
   #btn-voltar:hover {
     background: #666;
-  }
-  /* Lobby e login continuam do jeito que estavam */
-  #login-screen, #lobby-screen {
-    width: 600px;
-    height: 400px;
   }
 </style>
 </head>
@@ -141,8 +144,9 @@
 <div id="game-screen" class="screen">
   <button id="btn-voltar">Voltar ao Menu</button>
   <div id="weapon-left">Nenhuma arma</div>
+  <canvas id="game-canvas" width="600" height="350"></canvas>
+  <div id="right-blocker"></div>
   <div id="score-display">Pontos: 0</div>
-  <canvas id="game-canvas" width="500" height="600"></canvas>
 </div>
 
 <script>
@@ -292,11 +296,11 @@
     if (caixaTimer) clearInterval(caixaTimer);
     caixaTimer = setInterval(() => {
       caixas.push({
-        x: canvas.width - 50, // Ajustado para não cortar caixa na direita
+        x: canvas.width - 40,
         y: 0,
         width: 40,
         height: 40,
-        speedY: 2, // velocidade mais lenta pra cair
+        speedY: 2, // caiu mais devagar
         slowed: false,
         vida: armasInfo['Normal'].tirosParaQuebrar
       });
@@ -316,6 +320,9 @@
     const rect = canvas.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
+
+    // Só permite clicar dentro do canvas (para atirar)
+    if (clickX < 0 || clickX > canvas.width || clickY < 0 || clickY > canvas.height) return;
 
     const dx = clickX - arma.x;
     const dy = clickY - arma.y;
