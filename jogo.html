@@ -65,7 +65,7 @@
     flex-direction: row;
     align-items: center;
     background: #111;
-    width: 600px;  /* mais largo para o jogo */
+    width: 600px;
     height: 640px;
   }
   #weapon-left {
@@ -82,8 +82,8 @@
     background: #222;
     border-radius: 10px;
     cursor: crosshair;
-    width: 500px;  /* largura aumentada */
-    height: 600px; /* altura maior */
+    width: 500px;
+    height: 600px;
   }
   #score-display {
     position: absolute; top: 10px; right: 10px; color: #fff;
@@ -292,11 +292,11 @@
     if (caixaTimer) clearInterval(caixaTimer);
     caixaTimer = setInterval(() => {
       caixas.push({
-        x: canvas.width - 50, // Ajustado para não cortar caixa na direita
+        x: canvas.width - 50,
         y: 0,
         width: 40,
         height: 40,
-        speedY: 2, // velocidade mais lenta pra cair
+        speedY: 2,
         slowed: false,
         vida: armasInfo['Normal'].tirosParaQuebrar
       });
@@ -339,7 +339,6 @@
   function loopJogo() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Atualiza caixas
     for (let i = caixas.length - 1; i >= 0; i--) {
       const box = caixas[i];
       if (!box.slowed && box.y >= canvas.height / 2) {
@@ -372,7 +371,6 @@
       }
     }
 
-    // Atualiza tiros
     for (let i = tiros.length - 1; i >= 0; i--) {
       const tiro = tiros[i];
       tiro.x += Math.cos(tiro.angle) * tiro.speed;
@@ -407,7 +405,6 @@
       }
     }
 
-    // Desenha arma na posição e ângulo
     const imgArma = armasInfo[arma.name].img;
     if (imgArma && imgArma.complete) {
       ctx.save();
