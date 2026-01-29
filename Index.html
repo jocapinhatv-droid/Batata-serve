@@ -201,9 +201,9 @@
   const inputPassword = document.getElementById('password');
   const inputCode = document.getElementById('code-input');
 
-  // Armas: dano e fireRate(ms)
+  // Armas: dano e fireRate(ms) e imagem
   const armasInfo = {
-    'Normal': { damage: 1, fireRate: 400, img: null, imgSrc: null },
+    'Normal': { damage: 1, fireRate: 400, img: null, imgSrc: 'https://i.imgur.com/ojS8Ksv.png' },
     'Pistola': { damage: 2, fireRate: 300, img: null, imgSrc: 'https://i.imgur.com/ciL6yLc.png' }
   };
 
@@ -211,20 +211,7 @@
   function carregarImagens() {
     for (const nome in armasInfo) {
       let img = new Image();
-      if (armasInfo[nome].imgSrc) {
-        img.src = armasInfo[nome].imgSrc;
-      } else {
-        // Criar uma imagem simples pra arma normal
-        let cnv = document.createElement('canvas');
-        cnv.width = 20;
-        cnv.height = 20;
-        let ctxCnv = cnv.getContext('2d');
-        ctxCnv.fillStyle = '#666';
-        ctxCnv.fillRect(4, 8, 12, 4);
-        ctxCnv.fillStyle = '#444';
-        ctxCnv.fillRect(8, 6, 4, 2);
-        img.src = cnv.toDataURL();
-      }
+      img.src = armasInfo[nome].imgSrc;
       armasInfo[nome].img = img;
     }
   }
@@ -465,6 +452,34 @@
     if (caixaIntervalId) clearInterval(caixaIntervalId);
   }
 
+  // Captura clique na tela para mirar e atirar
+  canvas.addEventListener('click', e => {
+    if (!arma.name) return;
+    const rect = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    // Calcula ângulo para mirar
+    const dx = clickX - arma.x;
+    const dy = clickY - arma.y;
+    arma.angle = Math.atan2(dy, dx);
+
+    // Atira se passou fireRate
+    const now = Date.now();
+    if (now - arma.lastFireTime >= armasInfo[arma.name].fireRate) {
+      arma.lastFireTime = now;
+      tiros.push({
+        x: arma.x,
+        y: arma.y,
+        angle: arma.angle,
+        speed: 10,
+        width: 8,
+        height: 4,
+        damage: armasInfo[arma.name].damage
+      });
+    }
+  });
+
   // Loop principal
   function loopJogo() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -502,16 +517,19 @@
       }
     }
 
-    // Desenha arma do player (apontando)
-    ctx.save();
-    ctx.translate(arma.x, arma.y);
-    ctx.rotate(arma.angle);
-    let img = armasInfo[arma.name].img;
-    if (img && img.complete) {
-      const scale = 0.05;
-      ctx.drawImage(img, -img.width / 2 * scale, -img.height / 2 * scale, img.width * scale, img.height * scale);
-    } else {
-      ctx.fillStyle = '#666';
-      ctx.fillRect(-arma.width / 2, -arma.height / 2, arma.width, arma.height);
-      ctx.fillStyle = '#222';
-      ctx.fillRect(arma.width /
+    // Atualizar e desenhar tiros
+    for (let i = tiros.length - 1; i >= 0; i--) {
+      let tiro = tiros[i];
+      tiro.x += Math.cos(tiro.angle) * tiro.speed;
+      tiro.y += Math.sin(tiro.angle) * tiro.speed;
+
+      // Desenhar tiro
+      ctx.save();
+      ctx.translate(tiro.x, tiro.y);
+      ctx.rotate(tiro.angle);
+      ctx.fillStyle = 'yellow';
+      ctx.fillRect(0, -tiro.height / 2, tiro.width, tiro.height);
+      ctx.restore();
+
+      // Verificar colisão com caixas
+      let colidiu =
